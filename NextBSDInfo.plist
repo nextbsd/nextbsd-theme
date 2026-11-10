@@ -2,6 +2,7 @@
   NSExecutable = NextBSD;
   NSPrincipalClass = NextBSD;
   GSThemeVersion = "0.1";
+  GSThemeLicense = "BSD-2-Clause";
   GSThemeDetails = "The NextBSD dark desktop theme";
   GSThemeAuthors = ("Joseph Maloney 2026");
   GSThemeIcon = "NextBSD.png";
