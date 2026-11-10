@@ -1,0 +1,18 @@
+{
+  NSExecutable = NextBSD;
+  NSPrincipalClass = NextBSD;
+  GSThemeVersion = "0.1";
+  GSThemeDetails = "The NextBSD dark desktop theme";
+  GSThemeAuthors = ("Joseph Maloney 2026");
+  GSThemeIcon = "NextBSD.png";
+  GSThemeDomain = {
+    NSFont = "Inter-Regular";
+    NSBoldFont = "Inter-Bold";
+    NSFontSize = 13;
+    NSUserFont = "Inter-Regular";
+    NSFixedPitchFont = "JetBrainsMono-Regular";
+    NSUserFixedPitchFont = "JetBrainsMono-Regular";
+    GSScrollerDefaultWidth = 14;
+    GSScrollerArrowsSameEnd = YES;
+  };
+}

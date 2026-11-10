@@ -1,0 +1,4 @@
+after-install::
+	$(MKDIRS) $(GNUSTEP_LIBRARY)/Fonts
+	cp Fonts/Inter/*.ttf Fonts/JetBrainsMono/*.ttf $(GNUSTEP_LIBRARY)/Fonts/
+	-fc-cache -f $(GNUSTEP_LIBRARY)/Fonts
