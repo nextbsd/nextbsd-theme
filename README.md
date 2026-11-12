@@ -30,6 +30,10 @@ NBDockPosition = right;
 NBWindowMode = stacking;
 NBMenuStyle = nextstep;
 NBMinimizeStyle = dock;
+NBModeDefaults = {
+    stacking = { NBDockPosition = right; NBMenuStyle = nextstep; };
+    tiling = { NBDockPosition = bottom; NBMenuStyle = inwindow; };
+};
 ```
 
 | Key | Values | Built-in default |
@@ -48,11 +52,42 @@ Each value is looked up in this order:
    `[[GSTheme theme] infoDictionary]`.
 3. **The built-in default** in the table.
 
+### Per-mode defaults
+
+The Dock position and the menu style are kept for each window mode, so
+switching between stacking and tiling brings that mode's set with it. In
+the NextBSD theme:
+
+| Window mode | Dock position | Menu style |
+|---|---|---|
+| **Stacking** (the theme's default mode) | right | NeXT |
+| **Tiling** | bottom | in-window |
+
+A theme declares them in `NBModeDefaults`, one dictionary per mode, and a
+user's own choices go in `NBModeSettings` in `NSGlobalDomain`, the same
+shape. For `NBDockPosition` and `NBMenuStyle`, in the current mode
+(`NBWindowMode`, looked up as above):
+
+1. **The user's choice for the mode:** `NBModeSettings[mode]`. In
+   stacking, a plain `NBDockPosition` or `NBMenuStyle` in the user's
+   defaults (from before settings were kept per mode) counts as the
+   user's stacking choice; settings apps move it into
+   `NBModeSettings.stacking` the next time they write one.
+2. **The theme's default for the mode:** `NBModeDefaults[mode]`.
+3. **The theme's plain key,** for themes without `NBModeDefaults`.
+4. **The built-in default.**
+
+For example, to keep the Dock on the left while tiling only:
+
+```sh
+defaults write NSGlobalDomain NBModeSettings '{ tiling = { NBDockPosition = left; }; }'
+```
+
 A value that isn't one of the listed ones is skipped. After changing one,
 a settings app posts the distributed notification
 `org.nextbsd.DesktopSettingsChanged`, with the changed key as `key` in the
 user info. `NBDesktopSettings.h` is the reference lookup; it isn't
-installed, and the NextBSD backend and Workspace each carry a copy.
+installed, and the NextBSD backend, the Dock and Workspace each carry a copy.
 
 For example, to try NeXT miniwindows and then go back to the theme's
 choice:
@@ -62,8 +97,10 @@ defaults write NSGlobalDomain NBMinimizeStyle nextstep
 defaults delete NSGlobalDomain NBMinimizeStyle
 ```
 
-Window mode and menu style are declared already, for the tiling and menu
-work still to come; nothing reads them yet.
+Workspace Preferences switches the window mode: it sets WindowServer's
+`WindowMode` (nextbsd/apps-windowserver, "Window tiling") and posts the
+notification for the mode, the Dock position and the menu style, so the
+Dock moves and running apps change their menus at once.
 
 ## Miniwindow icons
 

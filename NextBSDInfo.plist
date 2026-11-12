@@ -12,6 +12,12 @@
   NBWindowMode = stacking;
   NBMenuStyle = nextstep;
   NBMinimizeStyle = dock;
+  /* The Dock position and menu style for each window mode; switching
+     mode applies its set (see README). */
+  NBModeDefaults = {
+    stacking = { NBDockPosition = right; NBMenuStyle = nextstep; };
+    tiling = { NBDockPosition = bottom; NBMenuStyle = inwindow; };
+  };
   GSThemeDomain = {
     NSFont = "Inter-Regular";
     NSBoldFont = "Inter-Bold";
