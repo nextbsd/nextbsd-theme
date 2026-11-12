@@ -11,7 +11,7 @@
   NBDockPosition = right;
   NBWindowMode = stacking;
   NBMenuStyle = nextstep;
-  NBMinimizeStyle = previews;
+  NBMinimizeStyle = dock;
   GSThemeDomain = {
     NSFont = "Inter-Regular";
     NSBoldFont = "Inter-Bold";

@@ -29,7 +29,7 @@ The NextBSD theme declares:
 NBDockPosition = right;
 NBWindowMode = stacking;
 NBMenuStyle = nextstep;
-NBMinimizeStyle = previews;
+NBMinimizeStyle = dock;
 ```
 
 | Key | Values | Built-in default |
@@ -37,7 +37,7 @@ NBMinimizeStyle = previews;
 | `NBDockPosition` | `right`, `left`, `top`, `bottom` | `right` |
 | `NBWindowMode` | `stacking`, `tiling` | `stacking` |
 | `NBMenuStyle` | `nextstep` (floating, tear-off), `inwindow`, `macmenubar` | `nextstep` |
-| `NBMinimizeStyle` | `nextstep` (GNUstep miniwindows), `previews` (WindowServer tiles), `dock` (previews in the Dock) | `previews` |
+| `NBMinimizeStyle` | `nextstep` (GNUstep miniwindows), `previews` (WindowServer tiles), `dock` (live previews in the Dock) | `dock` |
 
 Each value is looked up in this order:
 
