@@ -6,6 +6,12 @@
   GSThemeDetails = "The NextBSD dark desktop theme";
   GSThemeAuthors = ("Joseph Maloney 2026");
   GSThemeIcon = "NextBSD.png";
+  /* Desktop defaults (see README): the user's choices in Workspace
+     Preferences override these. */
+  NBDockPosition = right;
+  NBWindowMode = stacking;
+  NBMenuStyle = nextstep;
+  NBMinimizeStyle = previews;
   GSThemeDomain = {
     NSFont = "Inter-Regular";
     NSBoldFont = "Inter-Bold";
