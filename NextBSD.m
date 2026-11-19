@@ -94,6 +94,49 @@ NBInstallMiniwindowIconFit(void)
   [super deactivate];
 }
 
+/*
+ * The Mac menu bar (NBMenuStyle macmenubar). Every app draws its own bar
+ * and WindowServer swaps them in place when another app becomes active,
+ * with status items (NSStatusItem, the Dock's extras) beside them at the
+ * right end, each a small window of its own drawn as a one-item bar. So
+ * the strip reads as one surface only if they all match:
+ *
+ *  - the same height in every app: this theme's, whatever an app's own
+ *    GSMenuBarHeight default says (libs-gui's default height);
+ *  - one line along the bottom, edge to edge, and nothing else:
+ *    GSTheme also draws a line down the left edge and along the top of
+ *    a horizontal menu, and starts the bottom one a pixel in, which
+ *    would show between status items and at the bar's left end.
+ *    In-window menu bars (inwindow) are horizontal menus too, and get
+ *    the same single line. A theme with GSMenuHorizontalBackground
+ *    tiles draws those instead.
+ */
+- (CGFloat) menuBarHeight
+{
+  return 22;
+}
+
+- (void) drawBackgroundForMenuView: (NSMenuView *)menuView
+                         withFrame: (NSRect)bounds
+                         dirtyRect: (NSRect)dirtyRect
+                        horizontal: (BOOL)horizontal
+{
+  if (!horizontal || [self tilesNamed: GSMenuHorizontalBackground
+                                state: GSThemeNormalState] != nil)
+    {
+      [super drawBackgroundForMenuView: menuView
+                             withFrame: bounds
+                             dirtyRect: dirtyRect
+                            horizontal: horizontal];
+      return;
+    }
+  [[self menuBackgroundColor] set];
+  NSRectFill(NSIntersectionRect(bounds, dirtyRect));
+  [[self menuBorderColor] set];
+  NSRectFill(NSMakeRect(NSMinX(bounds), NSMinY(bounds),
+                        NSWidth(bounds), 1.0));
+}
+
 /* GNUstep hardcodes a light gray resize bar when a theme has no tiles for it. */
 - (void) drawResizeBarRect: (NSRect)resizeBarRect
 {
