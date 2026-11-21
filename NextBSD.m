@@ -25,6 +25,9 @@ typedef void (*NBSetImageIMP)(id, SEL, NSImage *);
 
 static NBSetImageIMP miniWindowSetImage = NULL;
 static BOOL fitMiniwindowIcons = NO;
+/* The Mac menu bar's opacity: see-through as macOS's, a little less,
+   since nothing blurs what's behind it. */
+static const CGFloat NBMenuBarOpacity = 0.8;
 
 static NSImage *
 NBFittedMiniwindowImage(NSView *view, NSImage *image)
@@ -110,6 +113,8 @@ NBInstallMiniwindowIconFit(void)
  *    In-window menu bars (inwindow) are horizontal menus too, and get
  *    the same single line. A theme with GSMenuHorizontalBackground
  *    tiles draws those instead.
+ *  - the bar along the top of the screen is see-through, with no line:
+ *    see below.
  */
 - (CGFloat) menuBarHeight
 {
@@ -128,6 +133,19 @@ NBInstallMiniwindowIconFit(void)
                              withFrame: bounds
                              dirtyRect: dirtyRect
                             horizontal: horizontal];
+      return;
+    }
+  /* The Mac menu bar along the top of the screen (an app's bar, or a
+     status item, in a window of its own at menu bar level or above) is
+     see-through with no line along the bottom, as on macOS: the same
+     alpha in every bar and status item, so the strip reads as one. A
+     menu bar in a window (inwindow) stays solid, with its line. */
+  if ([[menuView window] level] >= NSMainMenuWindowLevel)
+    {
+      [[menuView window] setOpaque: NO];
+      [[[self menuBarBackgroundColor]
+         colorWithAlphaComponent: NBMenuBarOpacity] set];
+      NSRectFill(NSIntersectionRect(bounds, dirtyRect));
       return;
     }
   [[self menuBackgroundColor] set];
