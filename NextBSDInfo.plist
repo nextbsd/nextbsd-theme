@@ -12,6 +12,8 @@
   NBWindowMode = stacking;
   NBMenuStyle = nextstep;
   NBMinimizeStyle = dock;
+  /* The Dock: NeXTSTEP's tiles, no separators. */
+  NBDockStyle = nextstep;
   /* The Dock position and menu style for each window mode; switching
      mode applies its set (see README). */
   NBModeDefaults = {

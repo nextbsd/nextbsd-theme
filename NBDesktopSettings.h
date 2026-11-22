@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * A desktop setting (Dock position, window mode, menu style, minimize
- * style) is resolved in this order:
+ * style, Dock style) is resolved in this order:
  *
  *   1. the user's choice: the key in the user's defaults, normally
  *      NSGlobalDomain, written by Workspace Preferences. No value means
@@ -46,6 +46,7 @@
 #define NBWindowModeKey     @"NBWindowMode"     /* stacking tiling */
 #define NBMenuStyleKey      @"NBMenuStyle"      /* nextstep inwindow macmenubar */
 #define NBMinimizeStyleKey  @"NBMinimizeStyle"  /* nextstep previews dock */
+#define NBDockStyleKey      @"NBDockStyle"      /* nextstep mac tiling */
 
 /* The per-mode dictionaries: the user's (defaults) and the theme's
    (Info.plist), each { stacking = {...}; tiling = {...}; }. */

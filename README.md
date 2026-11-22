@@ -30,6 +30,7 @@ NBDockPosition = right;
 NBWindowMode = stacking;
 NBMenuStyle = nextstep;
 NBMinimizeStyle = dock;
+NBDockStyle = nextstep;
 NBModeDefaults = {
     stacking = { NBDockPosition = right; NBMenuStyle = nextstep; };
     tiling = { NBDockPosition = bottom; NBMenuStyle = inwindow; };
@@ -42,6 +43,7 @@ NBModeDefaults = {
 | `NBWindowMode` | `stacking`, `tiling` | `stacking` |
 | `NBMenuStyle` | `nextstep` (floating, tear-off), `inwindow`, `macmenubar` | `nextstep` |
 | `NBMinimizeStyle` | `nextstep` (GNUstep miniwindows), `previews` (WindowServer tiles), `dock` (live previews in the Dock) | `dock` |
+| `NBDockStyle` | `nextstep` (a tile behind each icon, no separators), `mac` (separators on a see-through panel), `tiling` (clear, with separators) | `nextstep` |
 
 Each value is looked up in this order:
 
