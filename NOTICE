@@ -17,6 +17,6 @@ From Rik's PNG1024 folder, scaled to 96 by 96 pixels:
   DriveRemovableMedia), each also as common_<name>.
 
 Changed for NextBSD: HomeDirectory, LocalFolder, NetworkFolder,
-PublicFolder and TemplatesFolder are Rik's Folder with a symbol drawn for
-NextBSD in the style of Rik's own (a house, a computer, a globe, two
-people, a dashed page).
+PublicFolder, TemplatesFolder, DeveloperFolder and VolumesFolder are Rik's
+Folder with a symbol drawn for NextBSD in the style of Rik's own (a house,
+a computer, a globe, two people, a dashed page, a hammer, a disk drive).
