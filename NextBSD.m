@@ -2,6 +2,7 @@
 #import <AppKit/PSOperators.h>
 #import <GNUstepGUI/GSTheme.h>
 #import <objc/runtime.h>
+#include <math.h>
 
 @interface NextBSD : GSTheme
 @end
@@ -98,14 +99,75 @@ NBHex(unsigned value)
                                    alpha: 1.0];
 }
 
-enum {
-  NBControl = 0x23262e, NBControlPressed = 0x1a1c22, NBControlBorder = 0x3a3f4b,
-  NBField = 0x0b0c10, NBFieldBorder = 0x2e323c, NBAccent = 0x00d4ff,
-  NBAccentText = 0x04141a, NBTitle = 0x111318, NBTitleInactive = 0x0f1013,
-  NBTitleText = 0xe9eaef, NBTitleTextInactive = 0x6b6f7c, NBSeparator = 0x23262e,
-  NBWindowBorder = 0x333845, NBWindowBorderInactive = 0x262a32,
-  NBPlane = 0x15171c, NBKnob = 0x3a3f4b, NBKnobPressed = 0x555b68
-};
+/*
+ * The desktop settings this theme draws by, both in NSGlobalDomain and
+ * set in Workspace Preferences, each with this theme's default (its
+ * Info.plist) when the person hasn't chosen:
+ *
+ *   NBAppearance   dark (the default) or light
+ *   NBWindowStyle  nextstep (the default): miniaturize at the left of
+ *                  the title bar, close at the right, faint until the
+ *                  pointer is over them; mac: traffic lights at the
+ *                  left, close, minimize and zoom; tiling: minimize,
+ *                  maximize and close at the right, as on Windows
+ *
+ * Both change at once in running apps (NBSettingsObserver below).
+ */
+static BOOL nbLight = NO;
+static NSString *nbWindowStyle = @"nextstep";
+
+/* The colours the theme draws with itself, for the appearance in use. */
+static unsigned NBControl, NBControlPressed, NBControlBorder, NBField, NBFieldBorder;
+static unsigned NBAccent, NBAccentText, NBTitle, NBTitleInactive, NBTitleText;
+static unsigned NBTitleTextInactive, NBSeparator, NBWindowBorder, NBWindowBorderInactive;
+static unsigned NBPlane, NBKnob, NBKnobPressed, NBHeaderPressed, NBHeaderText;
+
+static void
+NBApplyPalette(void)
+{
+  if (!nbLight)
+    {
+      NBControl = 0x23262e; NBControlPressed = 0x1a1c22; NBControlBorder = 0x3a3f4b;
+      NBField = 0x0b0c10; NBFieldBorder = 0x2e323c; NBAccent = 0x00d4ff;
+      NBAccentText = 0x04141a; NBTitle = 0x111318; NBTitleInactive = 0x0f1013;
+      NBTitleText = 0xe9eaef; NBTitleTextInactive = 0x6b6f7c; NBSeparator = 0x23262e;
+      NBWindowBorder = 0x333845; NBWindowBorderInactive = 0x262a32;
+      NBPlane = 0x15171c; NBKnob = 0x3a3f4b; NBKnobPressed = 0x555b68;
+      NBHeaderPressed = 0x1d2027; NBHeaderText = 0x9a9daa;
+    }
+  else
+    {
+      NBControl = 0xffffff; NBControlPressed = 0xe6e7eb; NBControlBorder = 0xc3c6ce;
+      NBField = 0xffffff; NBFieldBorder = 0xc3c6ce; NBAccent = 0x00b4dc;
+      NBAccentText = 0x04141a; NBTitle = 0xe8e9ed; NBTitleInactive = 0xf2f2f4;
+      NBTitleText = 0x1d1f24; NBTitleTextInactive = 0x9a9ea8; NBSeparator = 0xd3d5db;
+      NBWindowBorder = 0xb4b8c1; NBWindowBorderInactive = 0xcdd0d6;
+      NBPlane = 0xf4f4f6; NBKnob = 0xc3c6ce; NBKnobPressed = 0xa5a9b2;
+      NBHeaderPressed = 0xe6e7eb; NBHeaderText = 0x6b6f7a;
+    }
+}
+
+/* A setting: the person's (NSGlobalDomain), else the theme's, else the
+   built-in default, if it's one of the allowed values. */
+static NSString *
+NBSetting(NSDictionary *info, NSString *key, NSArray *allowed, NSString *builtin)
+{
+  id value = [[NSUserDefaults standardUserDefaults] objectForKey: key];
+
+  if (![allowed containsObject: value])
+    value = [info objectForKey: key];
+  return [allowed containsObject: value] ? value : builtin;
+}
+
+static void
+NBReadSettings(NSDictionary *info)
+{
+  nbLight = [NBSetting(info, @"NBAppearance",
+    [NSArray arrayWithObjects: @"dark", @"light", nil], @"dark") isEqual: @"light"];
+  ASSIGN(nbWindowStyle, NBSetting(info, @"NBWindowStyle",
+    [NSArray arrayWithObjects: @"nextstep", @"mac", @"tiling", nil], @"nextstep"));
+  NBApplyPalette();
+}
 static const CGFloat NBRadius = 5.0;
 static const CGFloat NBTitleHeight = 26.0;
 
@@ -180,6 +242,53 @@ NBInstallDefaultButtonTitle(void)
 }
 
 /*
+ * Where each window style puts the title bar's buttons, in the window
+ * decoration's coordinates (bounds: the whole window). NeXT: miniaturize
+ * at the left, close at the right, 16 points square. Mac: the traffic
+ * lights at the left, close, minimize, zoom. Tiling: minimize, maximize
+ * and close at the right, each the height of the title bar and wider, as
+ * on Windows.
+ */
+static const CGFloat NBButtonSize = 16.0;
+static const CGFloat NBTilingButtonWidth = 40.0;
+
+static NSRect
+NBButtonFrame(NSWindowButton which, NSRect b)
+{
+  CGFloat top = NSHeight(b) - NBButtonSize - floor((NBTitleHeight - NBButtonSize) / 2);
+
+  if ([nbWindowStyle isEqual: @"mac"])
+    {
+      CGFloat slot = which == NSWindowCloseButton ? 0
+                   : which == NSWindowMiniaturizeButton ? 1 : 2;
+      return NSMakeRect(8 + slot * 20, top, NBButtonSize, NBButtonSize);
+    }
+  if ([nbWindowStyle isEqual: @"tiling"])
+    {
+      CGFloat slot = which == NSWindowCloseButton ? 1
+                   : which == NSWindowZoomButton ? 2 : 3;
+      return NSMakeRect(NSWidth(b) - 1 - slot * NBTilingButtonWidth,
+                        NSHeight(b) - NBTitleHeight + 1,
+                        NBTilingButtonWidth, NBTitleHeight - 2);
+    }
+  if (which == NSWindowCloseButton)
+    return NSMakeRect(NSWidth(b) - NBButtonSize - 6, top, NBButtonSize, NBButtonSize);
+  return NSMakeRect(6, top, NBButtonSize, NBButtonSize);
+}
+
+/* How far the title keeps from each side, so it stays centred clear of
+   the buttons. */
+static CGFloat
+NBTitleInset(void)
+{
+  if ([nbWindowStyle isEqual: @"mac"])
+    return 76;
+  if ([nbWindowStyle isEqual: @"tiling"])
+    return 3 * NBTilingButtonWidth + 10;
+  return NBButtonSize + 10;
+}
+
+/*
  * Window buttons that colour when the pointer is over them, not only
  * while pressed: faint until then, the close button red and miniaturize
  * amber (their H images) under the pointer. GSTheme makes these buttons
@@ -206,7 +315,73 @@ static char NBTrackKey;
     return;
   objc_setAssociatedObject(self, &NBHoverKey,
     hover ? [NSNumber numberWithBool: YES] : nil, OBJC_ASSOCIATION_RETAIN);
+  /* The traffic lights show their symbols together, as on a Mac. */
+  {
+    NSEnumerator *e = [[[self superview] subviews] objectEnumerator];
+    NSView *v;
+    while ((v = [e nextObject]) != nil)
+      if ([v isKindOfClass: [NBTitleButton class]])
+        [v setNeedsDisplay: YES];
+  }
   [self setNeedsDisplay: YES];
+}
+
+/* Whether the pointer is over any of the window's buttons. */
+- (BOOL) nbGroupHover
+{
+  NSEnumerator *e = [[[self superview] subviews] objectEnumerator];
+  NSView *v;
+
+  while ((v = [e nextObject]) != nil)
+    if ([v isKindOfClass: [NBTitleButton class]] && [(NBTitleButton *)v nbHover])
+      return YES;
+  return NO;
+}
+
+/*
+ * GNUstep's title bar has close and miniaturize buttons only; the Mac and
+ * Tiling styles add zoom (maximize), a button of the same kind, placed
+ * whenever the decoration places the close button (on every layout, a
+ * resize and a theme change included) and removed in the NeXT style.
+ * Only a resizable window gets one.
+ */
+- (void) nbSyncZoom
+{
+  NSView *bar = [self superview];
+  NSWindow *w = [self target];
+  NSButton *zoom = nil;
+  NSEnumerator *e = [[bar subviews] objectEnumerator];
+  NSView *v;
+
+  /* Only the title bar's own buttons: -viewWithTag: would search the
+     window's content too and find any control tagged 2. */
+  while ((v = [e nextObject]) != nil)
+    if ([v isKindOfClass: [NBTitleButton class]]
+        && [(NSButton *)v tag] == NSWindowZoomButton)
+      zoom = (NSButton *)v;
+  BOOL want = bar != nil && ![nbWindowStyle isEqual: @"nextstep"]
+    && [w isKindOfClass: [NSWindow class]]
+    && ([w styleMask] & NSResizableWindowMask) != 0;
+
+  if (!want)
+    {
+      [zoom removeFromSuperview];
+      return;
+    }
+  if (zoom == nil)
+    {
+      zoom = AUTORELEASE([[NSButton alloc] initWithFrame: NSZeroRect]);
+      object_setClass(zoom, [NBTitleButton class]);
+      [zoom setTag: NSWindowZoomButton];
+      [zoom setBordered: NO];
+      [zoom setButtonType: NSMomentaryChangeButton];
+      [zoom setImagePosition: NSImageOnly];
+      [zoom setRefusesFirstResponder: YES];
+      [zoom setTarget: w];
+      [zoom setAction: @selector(zoom:)];
+      [bar addSubview: zoom];
+    }
+  [zoom setFrame: NBButtonFrame(NSWindowZoomButton, [bar bounds])];
 }
 
 - (void) nbUntrack
@@ -250,6 +425,116 @@ static char NBTrackKey;
 {
   [super setFrame: frame];
   [self nbTrack];
+  if ([self tag] == NSWindowCloseButton)
+    [self nbSyncZoom];
+}
+
+/* Mac: a coloured circle, grey when the window isn't key or main; the
+   pointer over any of them shows all three symbols. */
+- (void) nbDrawMac
+{
+  NSWindow *w = [self window];
+  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  NSInteger kind = [self tag];
+  unsigned fill = kind == NSWindowCloseButton ? 0xff5f57
+                : kind == NSWindowMiniaturizeButton ? 0xfebc2e : 0x28c840;
+  unsigned ink = kind == NSWindowCloseButton ? 0x4d0000
+               : kind == NSWindowMiniaturizeButton ? 0x5a3d00 : 0x0a4d10;
+  NSRect r = NSMakeRect(floor(NSMidX([self bounds]) - 6),
+                        floor(NSMidY([self bounds]) - 6), 12, 12);
+  NSColor *c = active || [self nbGroupHover] ? NBHex(fill)
+                                             : NBHex(nbLight ? 0xd1d1d6 : 0x3a3f4b);
+  NSBezierPath *glyph = [NSBezierPath bezierPath];
+  CGFloat cx = NSMidX(r), cy = NSMidY(r);
+
+  if ([[self cell] isHighlighted])
+    c = [c shadowWithLevel: 0.25];
+  [c set];
+  [[NSBezierPath bezierPathWithOvalInRect: r] fill];
+  if ([self nbGroupHover])
+    {
+      [glyph setLineWidth: 1.2];
+      [glyph setLineCapStyle: NSRoundLineCapStyle];
+      if (kind == NSWindowCloseButton)
+        {
+          [glyph moveToPoint: NSMakePoint(cx - 2.5, cy - 2.5)];
+          [glyph lineToPoint: NSMakePoint(cx + 2.5, cy + 2.5)];
+          [glyph moveToPoint: NSMakePoint(cx - 2.5, cy + 2.5)];
+          [glyph lineToPoint: NSMakePoint(cx + 2.5, cy - 2.5)];
+        }
+      else
+        {
+          [glyph moveToPoint: NSMakePoint(cx - 3, cy)];
+          [glyph lineToPoint: NSMakePoint(cx + 3, cy)];
+          if (kind == NSWindowZoomButton)
+            {
+              [glyph moveToPoint: NSMakePoint(cx, cy - 3)];
+              [glyph lineToPoint: NSMakePoint(cx, cy + 3)];
+            }
+        }
+      [NBHex(ink) set];
+      [glyph stroke];
+    }
+  else if (kind == NSWindowCloseButton && [w isDocumentEdited])
+    {
+      [NBHex(ink) set];
+      [[NSBezierPath bezierPathWithOvalInRect:
+                       NSMakeRect(cx - 2, cy - 2, 4, 4)] fill];
+    }
+}
+
+/* Tiling: flat buttons the height of the title bar, a thin symbol, a
+   highlight under the pointer (red for close), as on Windows. */
+- (void) nbDrawTiling
+{
+  NSWindow *w = [self window];
+  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  NSInteger kind = [self tag];
+  BOOL pressed = [[self cell] isHighlighted], hover = [self nbHover];
+  NSRect b = [self bounds];
+  CGFloat cx = floor(NSMidX(b)) + 0.5, cy = floor(NSMidY(b)) + 0.5;
+  NSBezierPath *glyph = [NSBezierPath bezierPath];
+  unsigned ink = active ? NBTitleText : NBTitleTextInactive;
+
+  if (hover || pressed)
+    {
+      if (kind == NSWindowCloseButton)
+        {
+          [NBHex(pressed ? 0xb30f1c : 0xe81123) set];
+          ink = 0xffffff;
+        }
+      else
+        [NBHex(nbLight ? (pressed ? 0xcfd1d7 : 0xdcdee3)
+                       : (pressed ? 0x343844 : 0x2b2f38)) set];
+      NSRectFill(b);
+    }
+  [glyph setLineWidth: 1.0];
+  if (kind == NSWindowCloseButton)
+    {
+      [glyph moveToPoint: NSMakePoint(cx - 5, cy - 5)];
+      [glyph lineToPoint: NSMakePoint(cx + 5, cy + 5)];
+      [glyph moveToPoint: NSMakePoint(cx - 5, cy + 5)];
+      [glyph lineToPoint: NSMakePoint(cx + 5, cy - 5)];
+    }
+  else if (kind == NSWindowMiniaturizeButton)
+    {
+      [glyph moveToPoint: NSMakePoint(cx - 5, cy)];
+      [glyph lineToPoint: NSMakePoint(cx + 5, cy)];
+    }
+  else if ([w isZoomed])
+    {
+      /* Restore: two overlapping windows. */
+      [glyph appendBezierPathWithRect: NSMakeRect(cx - 5, cy - 5, 8, 8)];
+      [glyph moveToPoint: NSMakePoint(cx - 3, cy + 3)];
+      [glyph lineToPoint: NSMakePoint(cx - 3, cy + 5)];
+      [glyph lineToPoint: NSMakePoint(cx + 5, cy + 5)];
+      [glyph lineToPoint: NSMakePoint(cx + 5, cy - 3)];
+      [glyph lineToPoint: NSMakePoint(cx + 3, cy - 3)];
+    }
+  else
+    [glyph appendBezierPathWithRect: NSMakeRect(cx - 5, cy - 5, 10, 10)];
+  [NBHex(ink) set];
+  [glyph stroke];
 }
 
 - (void) mouseEntered: (NSEvent *)event
@@ -267,6 +552,16 @@ static char NBTrackKey;
   NSImage *hover = [self alternateImage];
   NSSize size;
 
+  if ([nbWindowStyle isEqual: @"mac"])
+    {
+      [self nbDrawMac];
+      return;
+    }
+  if ([nbWindowStyle isEqual: @"tiling"])
+    {
+      [self nbDrawTiling];
+      return;
+    }
   if (![self nbHover] || ![self isEnabled] || hover == nil)
     {
       [super drawRect: rect];
@@ -332,9 +627,19 @@ NBRetile(NSView *view)
 {
   NSEnumerator *e;
   NSWindow *w;
+  id key = [[note userInfo] objectForKey: @"key"];
 
-  if (![[[note userInfo] objectForKey: @"key"]
-         isEqual: @"NBScrollerStyle"])
+  /* Appearance and window style: the theme activates again with them,
+     which reloads its colours and images, lays out every title bar
+     again and redraws every window (GSTheme -activate). */
+  if ([key isEqual: @"NBAppearance"] || [key isEqual: @"NBWindowStyle"])
+    {
+      [[NSUserDefaults standardUserDefaults] synchronize];
+      if ([[GSTheme theme] isKindOfClass: NSClassFromString(@"NextBSD")])
+        [[GSTheme theme] activate];
+      return;
+    }
+  if (![key isEqual: @"NBScrollerStyle"])
     return;
   [[NSUserDefaults standardUserDefaults] synchronize];
   e = [[NSApp windows] objectEnumerator];
@@ -348,8 +653,82 @@ NBRetile(NSView *view)
 
 @implementation NextBSD
 
+static NSDictionary *lightInfo = nil;
+
+/* Light: the light colour list (ThemeColorsLight.clr, Tools/make-colors). */
+- (NSColorList *) colors
+{
+  static NSColorList *light = nil;
+
+  if (!nbLight)
+    return [super colors];
+  if (light == nil)
+    {
+      NSString *path = [[self bundle] pathForResource: @"ThemeColorsLight"
+                                               ofType: @"clr"];
+      if (path != nil)
+        light = [[NSColorList alloc] initWithName: @"System" fromFile: path];
+    }
+  return light != nil ? light : [super colors];
+}
+
+- (NSColor *) colorNamed: (NSString *)name state: (GSThemeControlState)state
+{
+  if (nbLight && [name isEqual: @"highlightedTableRowBackgroundColor"])
+    return NBHex(0xb6e3f2);
+  if (nbLight && [name isEqual: @"highlightedTableRowTextColor"])
+    return NBHex(0x1d1f24);
+  return [super colorNamed: name state: state];
+}
+
+/* Light: the images that differ, through GSThemeImages, which NSImage
+   asks before the theme's own images: the empty checkbox and radio, and
+   the NeXT window buttons and the menus' submenu arrows (light_*.png). */
+- (NSDictionary *) infoDictionary
+{
+  NSDictionary *info = [super infoDictionary];
+  NSMutableDictionary *images;
+
+  if (!nbLight)
+    return info;
+  if (lightInfo == nil)
+    {
+      NSMutableDictionary *d = AUTORELEASE([info mutableCopy]);
+      images = [NSMutableDictionary dictionaryWithDictionary:
+                  [info objectForKey: @"GSThemeImages"]];
+      NSEnumerator *e;
+      NSString *n;
+      e = [[NSArray arrayWithObjects: @"NSSwitch", @"common_SwitchOff",
+                                      @"GSSwitch", nil] objectEnumerator];
+      while ((n = [e nextObject]) != nil)
+        [images setObject: @"light_SwitchOff" forKey: n];
+      e = [[NSArray arrayWithObjects: @"NSRadioButton", @"common_RadioOff",
+                                      @"GSRadio", nil] objectEnumerator];
+      while ((n = [e nextObject]) != nil)
+        [images setObject: @"light_RadioOff" forKey: n];
+      [images setObject: @"light_Close" forKey: @"common_Close"];
+      [images setObject: @"light_Miniaturize" forKey: @"common_Miniaturize"];
+      [images setObject: @"light_CloseBroken" forKey: @"common_CloseBroken"];
+      e = [[NSArray arrayWithObjects: @"NSMenuArrow", @"GSMenuArrow",
+                                      @"common_3DArrowRight", nil] objectEnumerator];
+      while ((n = [e nextObject]) != nil)
+        [images setObject: @"light_3DArrowRight" forKey: n];
+      e = [[NSArray arrayWithObjects: @"NSHighlightedMenuArrow",
+                                      @"common_3DArrowRightH", nil] objectEnumerator];
+      while ((n = [e nextObject]) != nil)
+        [images setObject: @"light_3DArrowRightH" forKey: n];
+      [d setObject: images forKey: @"GSThemeImages"];
+      ASSIGN(lightInfo, d);
+    }
+  return lightInfo;
+}
+
 - (void) activate
 {
+  /* Read the appearance and window style first: GSTheme's -activate asks
+     for the colours (-colors) and images (-infoDictionary) by them. */
+  NBReadSettings([super infoDictionary]);
+  DESTROY(lightInfo);
   [super activate];
   NBInstallMiniwindowIconFit();
   fitMiniwindowIcons = (miniWindowSetImage != NULL);
@@ -537,7 +916,9 @@ NBRetile(NSView *view)
 {
   NSButtonCell *cell = (NSButtonCell *)[super cellForScrollerKnobSlot: horizontal];
 
-  [cell setBackgroundColor: NBHex(NBPlane)];
+  /* The system colour, not a fixed one: a scroller made in Dark keeps
+     its slot cell, and must change with the appearance. */
+  [cell setBackgroundColor: [NSColor scrollBarColor]];
   return cell;
 }
 
@@ -596,7 +977,7 @@ NBRingForControl(NSView *view)
    under them and short ones between the columns. */
 - (NSColor *) tableHeaderTextColorForState: (GSThemeControlState)state
 {
-  return state == GSThemeHighlightedState ? NBHex(NBTitleText) : NBHex(0x9a9daa);
+  return state == GSThemeHighlightedState ? NBHex(NBTitleText) : NBHex(NBHeaderText);
 }
 
 - (void) drawTableHeaderCell: (NSTableHeaderCell *)cell
@@ -606,7 +987,7 @@ NBRingForControl(NSView *view)
 {
   BOOL flipped = [controlView isFlipped];
 
-  [NBHex(state == GSThemeHighlightedState ? 0x1d2027 : NBPlane) set];
+  [NBHex(state == GSThemeHighlightedState ? NBHeaderPressed : NBPlane) set];
   NSRectFill(cellFrame);
   [NBHex(NBSeparator) set];
   NSRectFill(NSMakeRect(NSMinX(cellFrame),
@@ -645,7 +1026,18 @@ NBRingForControl(NSView *view)
 
   if ([b class] == [NSButton class])
     object_setClass(b, [NBTitleButton class]);
+  [b setTag: button];
   return b;
+}
+
+- (NSRect) closeButtonFrameForBounds: (NSRect)bounds
+{
+  return NBButtonFrame(NSWindowCloseButton, bounds);
+}
+
+- (NSRect) miniaturizeButtonFrameForBounds: (NSRect)bounds
+{
+  return NBButtonFrame(NSWindowMiniaturizeButton, bounds);
 }
 
 - (float) titlebarButtonSize
@@ -689,7 +1081,7 @@ NBRingForControl(NSView *view)
       NSFont *font = [NSFont boldSystemFontOfSize: 0];
       NSDictionary *attrs;
       NSSize size;
-      CGFloat inset = [self titlebarButtonSize] + [self titlebarPaddingLeft] + 4;
+      CGFloat inset = NBTitleInset();
 
       [p setLineBreakMode: NSLineBreakByTruncatingTail];
       attrs = [NSDictionary dictionaryWithObjectsAndKeys:
@@ -737,6 +1129,45 @@ NBRingForControl(NSView *view)
     {
       [NBHex(inputState == 0 ? NBWindowBorder : NBWindowBorderInactive) set];
       NSFrameRect(NSMakeRect(0, 0, NSWidth(frame), NSHeight(frame)));
+    }
+  /* Rounded top corners, as in the design (9 points): the title bar's
+     corners are cleared and the window made see-through there, the way
+     the Mac menu bar's alpha already reaches WindowServer. The content
+     view fills the window to its bottom edge, so only the top corners
+     can round from here. */
+  if (styleMask & NSTitledWindowMask)
+    {
+      NSWindow *w = [[NSView focusView] window];
+      CGFloat r = 9, W = NSWidth(frame), H = NSHeight(frame);
+      NSBezierPath *edge = [NSBezierPath bezierPath];
+      int row;
+
+      if ([w isOpaque])
+        [w setOpaque: NO];
+      /* Clear what lies outside the curve, a row at a time. */
+      for (row = 0; row < (int)r; row++)
+        {
+          CGFloat dy = r - row - 0.5;
+          CGFloat out = r - sqrt(r * r - dy * dy);
+          if (out <= 0)
+            continue;
+          NSRectFillUsingOperation(NSMakeRect(0, H - row - 1, ceil(out), 1),
+                                   NSCompositeClear);
+          NSRectFillUsingOperation(NSMakeRect(W - ceil(out), H - row - 1, ceil(out), 1),
+                                   NSCompositeClear);
+        }
+      /* The border follows the rounded edge. */
+      [edge moveToPoint: NSMakePoint(0.5, H - r)];
+      [edge appendBezierPathWithArcWithCenter: NSMakePoint(r, H - r)
+                                       radius: r - 0.5 startAngle: 180 endAngle: 90
+                                    clockwise: YES];
+      [edge moveToPoint: NSMakePoint(W - r, H - 0.5)];
+      [edge appendBezierPathWithArcWithCenter: NSMakePoint(W - r, H - r)
+                                       radius: r - 0.5 startAngle: 90 endAngle: 0
+                                    clockwise: YES];
+      [edge setLineWidth: 1];
+      [NBHex(inputState == 0 ? NBWindowBorder : NBWindowBorderInactive) set];
+      [edge stroke];
     }
 }
 

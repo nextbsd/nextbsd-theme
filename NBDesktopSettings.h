@@ -48,6 +48,8 @@
 #define NBMinimizeStyleKey  @"NBMinimizeStyle"  /* nextstep previews dock */
 #define NBDockStyleKey      @"NBDockStyle"      /* nextstep mac tiling */
 #define NBScrollerStyleKey  @"NBScrollerStyle"  /* nextstep mac split */
+#define NBAppearanceKey     @"NBAppearance"     /* dark light */
+#define NBWindowStyleKey    @"NBWindowStyle"    /* nextstep mac tiling */
 
 /* The per-mode dictionaries: the user's (defaults) and the theme's
    (Info.plist), each { stacking = {...}; tiling = {...}; }. */

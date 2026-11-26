@@ -32,6 +32,8 @@ NBMenuStyle = nextstep;
 NBMinimizeStyle = dock;
 NBDockStyle = nextstep;
 NBScrollerStyle = nextstep;
+NBAppearance = dark;
+NBWindowStyle = nextstep;
 NBModeDefaults = {
     stacking = { NBDockPosition = right; NBMenuStyle = nextstep; };
     tiling = { NBDockPosition = bottom; NBMenuStyle = inwindow; };
@@ -46,6 +48,8 @@ NBModeDefaults = {
 | `NBMinimizeStyle` | `nextstep` (GNUstep miniwindows), `previews` (WindowServer tiles), `dock` (live previews in the Dock) | `dock` |
 | `NBDockStyle` | `nextstep` (a tile behind each icon, no separators), `mac` (separators on a see-through panel), `tiling` (clear, with separators) | `nextstep` |
 | `NBScrollerStyle` | `nextstep` (left, both arrows at the bottom), `mac` (right, both arrows at the bottom), `split` (right, an arrow at each end) | `nextstep` |
+| `NBAppearance` | `dark`, `light` | `dark` |
+| `NBWindowStyle` | `nextstep` (miniaturize left, close right, faint until hovered), `mac` (traffic lights at the left: close, minimize, zoom), `tiling` (minimize, maximize, close at the right, as on Windows) | `nextstep` |
 
 Each value is looked up in this order:
 
