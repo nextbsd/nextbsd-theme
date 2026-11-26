@@ -86,6 +86,16 @@ h2{font-size:20px;margin:42px 0 10px}
 .grid button.sel span{background:var(--sel);color:#fff;border-radius:4px;padding:0 4px}
 .win.inactive .grid button.sel span{background:var(--seli);color:var(--txt)}
 .grid button:focus-visible{outline:2px solid var(--acc)}
+.preset{all:unset;cursor:pointer;width:120px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:calc(var(--rad) + 2px);border:1px solid var(--ctlb);background:var(--ctl);box-shadow:var(--bev);font-size:12px}
+.preset.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,var(--ctl))}
+.win.inactive .preset.on{border-color:#8a8f9b;background:var(--ctl)}
+.preset:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pv{width:100px;height:58px;border-radius:4px;background:#07080b;border:1px solid #2c3039;position:relative;overflow:hidden}
+.pv::before,.pv::after{content:"";position:absolute;background:#2b2f38;border-radius:2px}
+.pv-next::before{left:6px;top:6px;width:14px;height:22px}.pv-next::after{left:30px;top:12px;width:46px;height:34px}
+.pv-mac::before{left:0;top:0;right:0;height:5px}.pv-mac::after{left:22px;top:12px;width:52px;height:32px}
+.pv-tiling::before{left:5px;top:5px;width:43px;height:48px}.pv-tiling::after{left:52px;top:5px;width:43px;height:48px}
+.form[hidden]{display:none}
 /* terminal */
 .term{flex:1;min-height:0;background:#0b0c10;padding:8px 10px;font:12px/1.5 var(--mono);color:#d6d8de;overflow:hidden}
 .desk.cur .term{background:#1e1e1e}
@@ -244,20 +254,11 @@ h2{font-size:20px;margin:42px 0 10px}
       <button type="button" class="sw8" aria-pressed="false" data-a="#6fd38a" data-t="#04160a" style="background:#6fd38a" aria-label="Green"></button>
       <button type="button" class="sw8" aria-pressed="false" data-a="#ffb454" data-t="#1c1003" style="background:#ffb454" aria-label="Amber"></button>
     </div>
-    <span>Click a window or its Dock tile to make it active; the others go inactive. The app menu at top left follows the active app.</span>
+    <span>Click a window or its Dock tile to make it active; the others go inactive. The app menu at top left is the active app’s real menu. Workspace → Preferences… opens its real Preferences.</span>
   </div>
 
   <div class="desk full" id="desk">
-    <nav class="amenu" id="amenu" aria-label="Application menu"><div class="t" id="appname">Settings</div>
-      <button type="button" data-m="info">Info <span class="arr">›</span></button>
-      <button type="button" data-m="file">File <span class="arr">›</span></button>
-      <button type="button" data-m="edit">Edit <span class="arr">›</span></button>
-      <button type="button" data-m="view">View <span class="arr">›</span></button>
-      <button type="button" data-m="windows">Windows <span class="arr">›</span></button>
-      <button type="button" data-m="services">Services <span class="arr">›</span></button>
-      <button type="button" data-hide>Hide <kbd>⌘H</kbd></button>
-      <button type="button" data-quit>Quit <kbd>⌘Q</kbd></button>
-    </nav>
+    <nav class="amenu" id="amenu" aria-label="Application menu"></nav>
     <div class="dockr" aria-label="Dock">
       <button type="button" class="tile run" data-open="w1" title="Workspace"><span class="dot"></span><svg viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2e38"/><stop offset="1" stop-color="#14161c"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g1)" stroke="#3a3f4b"/><path d="M32 10 52 21.5 32 33 12 21.5Z" fill="#f6f7f9"/><path d="M12 21.5 32 33v22L12 43.5Z" fill="#a9abb3"/><path d="M52 21.5 32 33v22l20-11.5Z" fill="#3c3f47"/></svg></button>
       <button type="button" class="tile run" data-open="w3" title="Terminal"><span class="dot"></span><svg viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#0b0c10" stroke="#3a3f4b"/><rect x="2" y="2" width="60" height="12" rx="14" fill="#1d2027"/><rect x="2" y="9" width="60" height="5" fill="#1d2027"/><path d="M14 27l9 7-9 7" fill="none" stroke="#e9eaef" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 43h16" stroke="#00d4ff" stroke-width="3.5" stroke-linecap="round"/></svg></button>
@@ -298,21 +299,11 @@ h2{font-size:20px;margin:42px 0 10px}
     </section>
 
     <!-- Settings -->
-    <section class="win" id="w2" data-app="Settings" style="left:40%;top:26%;width:50%;height:70%" aria-label="Settings window">
-      <div class="tbar"><span class="wb mini" title="Miniaturize"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h6"/></svg></span>Appearance<span class="wb close" title="Close"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span></div>
+    <section class="win" id="w2" data-app="Workspace" style="left:40%;top:24%;width:50%;height:72%" aria-label="Preferences window">
+      <div class="tbar"><span class="wb mini" title="Miniaturize"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h6"/></svg></span>Preferences<span class="wb close" title="Close"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span></div>
       <div class="wbody" style="position:relative">
-        <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="true">General</button><button type="button" role="tab" aria-selected="false">Desktop</button><button type="button" role="tab" aria-selected="false">Windows</button></div>
-        <div class="form">
-          <label class="l" for="nameField">Computer name</label><label class="fld"><input id="nameField" value="Raspberry-Pi-500"></label>
-          <span class="l" style="color:var(--sub);text-align:right">Appearance</span><div><div class="seg" role="group" aria-label="Appearance"><button type="button" aria-pressed="true">Dark</button><button type="button" aria-pressed="false">Grey</button><button type="button" aria-pressed="false">Auto</button></div></div>
-          <span class="l" style="color:var(--sub);text-align:right">Menu style</span><div><button type="button" class="pop" id="pop1">NeXTSTEP menus</button></div>
-          <span class="l" style="color:var(--sub);text-align:right">Dock</span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Show the Dock</button><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Hide when not in use</button></div>
-          <span class="l" style="color:var(--sub);text-align:right">Dock position</span><div class="row" role="radiogroup"><button type="button" class="chk rad" role="radio" aria-checked="false"><span class="b"></span>Left</button><button type="button" class="chk rad" role="radio" aria-checked="true"><span class="b"></span>Right</button><button type="button" class="chk rad" role="radio" aria-checked="false"><span class="b"></span>Bottom</button></div>
-          <label class="l" for="sz">Icon size</label><input type="range" class="rng" id="sz" min="0" max="100" value="55" aria-label="Icon size">
-          <span class="l" style="color:var(--sub);text-align:right">Sounds</span><div class="row"><button type="button" class="sw" role="switch" aria-checked="true" aria-label="Interface sounds"></button><span>Play interface sounds</span></div>
-          <span class="l" style="color:var(--sub);text-align:right">Updating</span><div><div class="prog"><i></i></div></div>
-        </div>
-        <div class="foot"><button type="button" class="btn" disabled>Revert</button><button type="button" class="btn" id="cancelBtn">Cancel</button><button type="button" class="btn def" id="applyBtn">Apply</button></div>
+        <div class="tabs" role="tablist" id="ptabs"><button type="button" role="tab" aria-selected="true" data-t="General">General</button><button type="button" role="tab" aria-selected="false" data-t="Desktop">Desktop</button><button type="button" role="tab" aria-selected="false" data-t="Dock">Dock</button><button type="button" role="tab" aria-selected="false" data-t="Background">Background</button></div>
+        <div class="form" data-tab="General"><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Show thumbnails</button><span></span><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Show hidden files and directories</button><span></span><span style="color:var(--sub)">Changes apply to all open windows.</span></div><div class="form" data-tab="Desktop" hidden><span class="l" style="grid-column:1/3;text-align:left;color:var(--txt)">Choose your style:</span><div style="grid-column:1/3;display:flex;gap:10px;justify-content:center"><button type="button" class="preset on" aria-pressed="true"><span class="pv pv-next"></span>NeXT</button><button type="button" class="preset" aria-pressed="false"><span class="pv pv-mac"></span>Mac</button><button type="button" class="preset" aria-pressed="false"><span class="pv pv-tiling"></span>Tiling</button></div><span class="l" style="color:var(--sub);text-align:right">Window mode:</span><div><button type="button" class="pop" data-pop>Use theme default (Stacking)</button></div><span class="l" style="color:var(--sub);text-align:right">Dock position:</span><div><button type="button" class="pop" data-pop>Use theme default (Right)</button></div><span class="l" style="color:var(--sub);text-align:right">Menu style:</span><div><button type="button" class="pop" data-pop>Use theme default (NeXT)</button></div><span class="l" style="color:var(--sub);text-align:right">Minimize windows:</span><div><button type="button" class="pop" data-pop>Use theme default (Into the Dock)</button></div><span class="l" style="color:var(--sub);text-align:right">Dock style:</span><div><button type="button" class="pop" data-pop>Use theme default (Optimized for NeXT)</button></div><span class="l" style="grid-column:1/3;text-align:left;color:var(--txt);font-weight:700">Tiling</span><span class="l" style="color:var(--sub);text-align:right">Layout:</span><div><button type="button" class="pop" data-pop>Dwindle</button></div><span class="l" style="color:var(--sub);text-align:right">Gap between windows:</span><div><button type="button" class="pop" data-pop>Use theme default (8 pixels)</button></div><span class="l" style="color:var(--sub);text-align:right">Gap around windows:</span><div><button type="button" class="pop" data-pop>Use theme default (8 pixels)</button></div><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Border around the active window</button></div><div class="form" data-tab="Dock" hidden><span class="l" style="color:var(--sub);text-align:right">Size:</span><div><input type="range" class="rng" min="0" max="100" value="55" aria-label="Size"><div style="display:flex;justify-content:space-between;color:var(--sub);font-size:11px"><span>Small</span><span>Large</span></div></div><span></span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Magnification:</button><input type="range" class="rng" min="0" max="100" value="30" aria-label="Magnification" style="flex:1;min-width:120px"></div><span></span><div><button type="button" class="btn">Restore Defaults</button></div><span class="l" style="color:var(--sub);text-align:right">Dots:</span><div><button type="button" class="pop" data-pop>Under open applications</button></div><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Animate opening applications</button><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Bounce when an application needs attention</button><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Open applications with a single click</button><span class="l" style="grid-column:1/3;text-align:left;color:var(--txt);font-weight:700">Status extras</span><span></span><span style="color:var(--sub)">Show in the Dock or menu bar:</span><span></span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Wi-Fi</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Bluetooth</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Battery</button></div><span></span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Sound</button><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Input source</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Clock</button></div></div><div class="form" data-tab="Background" hidden><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Show on every display</button><span></span><div><button type="button" class="btn">Options…</button></div></div>
       </div>
     </section>
 
@@ -403,25 +394,50 @@ $("#side").addEventListener("click",e=>{const d=e.target.closest("div");if(!d)re
 $("#iconv").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#iconv button").forEach(x=>x.classList.toggle("sel",x===b))});
 /* focus: one active window */
 let z=10;
-function activate(w){$$("#desk .win").forEach(x=>x.classList.toggle("inactive",x!==w));w.style.zIndex=++z;$("#appname").textContent=w.dataset.app;if(typeof closeSub==="function")closeSub()}
+function activate(w){$$("#desk .win").forEach(x=>x.classList.toggle("inactive",x!==w));w.style.zIndex=++z;if(typeof drawMenu==="function")drawMenu(w.dataset.app)}
 $$("#desk .win").forEach(w=>{w.style.zIndex=w.classList.contains("inactive")?5:6;w.addEventListener("pointerdown",()=>activate(w))});
 $$("#desk .tile[data-open]").forEach(t=>t.addEventListener("click",()=>{const w=t.dataset.open&&document.getElementById(t.dataset.open);if(w){w.style.opacity=1;w.style.transform="none";activate(w)}}));
-/* app menu: submenus beside it */
-const SUBS={info:["Info Panel…","Preferences… ⌘,","Help"],file:["New Window ⌘N","Open… ⌘O","Close Window ⌘W"],edit:["Undo ⌘Z","Cut ⌘X","Copy ⌘C","Paste ⌘V","Select All ⌘A"],view:["as List","as Columns","as Icons"],windows:["Arrange in Front","Miniaturize Window ⌘M","Close Window ⌘W"],services:["Open in Terminal","Search"]};
-let sub=null;
+/* The apps' own menus, as their sources build them (apps-workspace
+   FVApplication.m, apps-terminal AppController.m, apps-update). */
+const K=(t,k)=>[t,k||""];
+const MENUS={
+ Workspace:{top:[K("About Workspace"),K("Preferences…","⌘,"),"File","Edit","View","Go","Window","Help",K("Quit","⌘Q")],
+  subs:{File:[K("New Window","⌘N"),K("Open","⌘O"),K("Open With…"),K("Open Folder in New Window"),K("Show Package Contents"),K("New Folder"),K("Rename"),K("Delete Permanently…"),K("Get Info","⌘I"),K("Add to Favorites","⌃⌘T"),K("Add to Dock"),K("Close","⌘W")],
+   Edit:[K("Undo Last Safe Operation","⌘Z"),K("Cut","⌘X"),K("Copy","⌘C"),K("Paste","⌘V"),K("Select All","⌘A"),K("Copy Path"),K("Duplicate","⌘D"),K("Move To…"),K("Move to Trash"),K("Delete Permanently…"),K("Cancel Work","⌘.")],
+   View:[K("List","⌘1"),K("Columns","⌘2"),K("Icons","⌘3"),K("Larger Icons","⌘+"),K("Smaller Icons","⌘-"),K("Show Hidden Files","⌘H"),K("Folders First"),K("Refresh","⌘R"),K("Search","⌘F")],
+   Go:[K("Back","⌘["),K("Forward","⌘]"),K("Parent Folder","⌘U"),K("Home"),K("Go to Folder…","⌘G")],
+   Window:[K("Minimize","⌘M")],Help:[K("Workspace Help","⌘?")]}},
+ Terminal:{top:[K("About Terminal"),K("Preferences…","⌘,"),"Session","Edit","Window",K("Terminal Help","⌘?"),K("Hide Terminal","⌘H"),K("Quit","⌘Q")],
+  subs:{Session:[K("New Terminal","⌘N"),K("New Terminal in Directory…","⌘O"),K("Close Terminal","⌘T"),K("Restart Shell"),K("Close Session","⌘W")],
+   Edit:[K("Copy","⌘C"),K("Paste","⌘V"),K("Select All","⌘A")],Window:[K("Minimize","⌘M")]}},
+ Update:{top:[K("About Update"),K("Check for Updates"),K("Installed Versions…"),K("Close","⌘W"),K("Hide","⌘H"),K("Quit","⌘Q")],subs:{}}
+};
+let sub=null,menuApp="Workspace";
 function closeSub(){if(sub){sub.remove();sub=null;$$("#amenu button.open").forEach(b=>b.classList.remove("open"))}}
+function drawMenu(app){
+  menuApp=app;closeSub();
+  const m=MENUS[app];
+  $("#amenu").innerHTML='<div class="t" id="appname">'+app+'</div>'+m.top.map(it=>typeof it==="string"
+    ?'<button type="button" data-m="'+it+'">'+it+' <span class="arr">›</span></button>'
+    :'<button type="button" data-cmd="'+it[0]+'">'+it[0]+(it[1]?' <kbd>'+it[1]+'</kbd>':'')+'</button>').join("");
+}
+drawMenu("Workspace");
 $("#amenu").addEventListener("click",e=>{
-  const b=e.target.closest("button[data-m]");
-  if(!b){if(e.target.closest("[data-hide],[data-quit]"))closeSub();return}
+  const c=e.target.closest("button[data-cmd]");
+  if(c){closeSub();if(c.dataset.cmd==="Preferences…"&&menuApp==="Workspace"){const w=$("#w2");w.style.opacity=1;w.style.transform="none";activate(w)}return}
+  const b=e.target.closest("button[data-m]");if(!b)return;
   e.stopPropagation();
   if(b.classList.contains("open")){closeSub();return}
   closeSub();b.classList.add("open");
   const dr=desk.getBoundingClientRect(),br=b.getBoundingClientRect(),mr=$("#amenu").getBoundingClientRect();
   sub=document.createElement("div");sub.className="sub";sub.setAttribute("role","menu");
-  SUBS[b.dataset.m].forEach(t=>{const p=t.split(" ⌘"),i=document.createElement("button");i.type="button";i.innerHTML=p[0]+(p[1]?'<kbd>⌘'+p[1]+'</kbd>':'');i.onclick=closeSub;sub.appendChild(i)});
+  MENUS[menuApp].subs[b.dataset.m].forEach(t=>{const i=document.createElement("button");i.type="button";i.innerHTML=t[0]+(t[1]?'<kbd>'+t[1]+'</kbd>':'');i.onclick=closeSub;sub.appendChild(i)});
   sub.style.left=(mr.right-dr.left+4)+"px";sub.style.top=(br.top-dr.top-4)+"px";desk.appendChild(sub);
 });
 document.addEventListener("click",e=>{if(sub&&!e.target.closest(".sub,#amenu"))closeSub()});
+/* Preferences tabs and style presets */
+$("#ptabs").addEventListener("click",e=>{const t=e.target.closest("[data-t]");if(!t)return;$$("#ptabs [data-t]").forEach(x=>x.setAttribute("aria-selected",x===t));$$("#w2 .form").forEach(f=>f.hidden=f.dataset.tab!==t.dataset.t)});
+$("#w2").addEventListener("click",e=>{const p=e.target.closest(".preset");if(!p)return;$$("#w2 .preset").forEach(x=>{x.classList.toggle("on",x===p);x.setAttribute("aria-pressed",x===p)})});
 /* drag by the title bar */
 $$("#desk .tbar").forEach(t=>{
   t.addEventListener("pointerdown",e=>{
@@ -459,26 +475,20 @@ document.addEventListener("click",e=>{
 });
 /* slider fill */
 $$(".rng").forEach(r=>{const f=()=>r.style.setProperty("--v",r.value+"%");r.addEventListener("input",f);f()});
-/* popup menu */
+/* popup menus: each shows its own choices */
 let menu=null;
 function closeMenu(){if(menu){menu.remove();menu=null}}
-$("#pop1").addEventListener("click",e=>{
+const CHOICES={"Window mode:":["Use theme default (Stacking)","Stacking","Tiling"],"Dock position:":["Use theme default (Right)","Right","Left","Top","Bottom"],"Menu style:":["Use theme default (NeXT)","NeXT","In-window","Mac menu bar"],"Minimize windows:":["Use theme default (Into the Dock)","NeXT miniwindows","WindowServer previews","Into the Dock"],"Dock style:":["Use theme default (Optimized for NeXT)","Optimized for NeXT","Optimized for Mac","Optimized for Tiling"],"Layout:":["Dwindle","Master and stack"],"Gap between windows:":["Use theme default (8 pixels)","None","4 pixels","8 pixels","12 pixels","16 pixels"],"Gap around windows:":["Use theme default (8 pixels)","None","4 pixels","8 pixels","12 pixels","16 pixels"],"Dots:":["Under open applications","Under applications not open"]};
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-pop]");
+  if(!b){if(menu&&!e.target.closest(".menu"))closeMenu();return}
   e.stopPropagation();if(menu){closeMenu();return}
-  const b=e.currentTarget,w=b.closest(".win"),wr=w.getBoundingClientRect(),br=b.getBoundingClientRect();
+  const w=b.closest(".win"),wr=w.getBoundingClientRect(),br=b.getBoundingClientRect();
+  const label=b.parentElement.previousElementSibling?b.parentElement.previousElementSibling.textContent:"";
   menu=document.createElement("div");menu.className="menu";menu.setAttribute("role","menu");
-  ["NeXTSTEP menus","Mac menu bar","Menus in windows"].forEach(o=>{const i=document.createElement("button");i.type="button";i.textContent=o;i.setAttribute("role","menuitem");i.onclick=()=>{b.textContent=o;closeMenu()};menu.appendChild(i)});
+  (CHOICES[label]||[b.textContent]).forEach(o=>{const i=document.createElement("button");i.type="button";i.textContent=o;i.setAttribute("role","menuitem");i.onclick=()=>{b.textContent=o;closeMenu()};menu.appendChild(i)});
   menu.style.left=(br.left-wr.left)+"px";menu.style.top=(br.bottom-wr.top+2)+"px";w.appendChild(menu);menu.querySelector("button").focus();
 });
-document.addEventListener("click",e=>{if(menu&&!e.target.closest(".menu"))closeMenu()});
-/* Apply: a sheet slides down from the title bar */
-$("#applyBtn").addEventListener("click",()=>{
-  const body=$("#w2 .wbody");if(body.querySelector(".sheet"))return;
-  const sh=document.createElement("div");sh.className="sheet";sh.setAttribute("role","alertdialog");
-  sh.innerHTML='<h4>Apply the new appearance?</h4><p>Apps that are open pick it up when you restart them.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn" data-x>Not Now</button><button type="button" class="btn def" data-x>Apply</button></div>';
-  sh.addEventListener("click",ev=>{if(ev.target.closest("[data-x]"))sh.remove()});
-  body.appendChild(sh);sh.querySelector(".def").focus();
-});
-$("#cancelBtn").addEventListener("click",()=>{const sh=$("#w2 .sheet");if(sh)sh.remove()});
 /* theme and accent pickers */
 $("#themePick").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#themePick button").forEach(x=>x.setAttribute("aria-pressed",x===b));$$(".desk").forEach(d=>d.classList.toggle("cur",b.dataset.t==="cur"))});
 $("#accPick").addEventListener("click",e=>{const b=e.target.closest(".sw8");if(!b)return;$$("#accPick .sw8").forEach(x=>x.setAttribute("aria-pressed",x===b));$$(".desk").forEach(d=>{d.style.setProperty("--acc",b.dataset.a);d.style.setProperty("--acct",b.dataset.t)})});
