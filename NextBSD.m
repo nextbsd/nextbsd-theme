@@ -610,11 +610,10 @@ static char NBTrackKey;
 }
 
 /* NeXT: miniaturize at the left, close at the right, each a small lit
-   button with its symbol, shown as the traffic lights are: in colour on
-   the active window (close red, miniaturize amber, the symbol a darker
-   shade of it), a faint symbol alone on an inactive one, which the
-   pointer lights grey. A close button whose window has unsaved changes
-   shows a dot. */
+   button with its symbol, in colour (close red, miniaturize amber, the
+   symbol a darker shade of it): bright on the active window, dimmed
+   toward the title bar on an inactive one, which the pointer brightens.
+   A close button whose window has unsaved changes shows a dot. */
 - (void) nbDrawNeXT
 {
   NSWindow *w = [self window];
@@ -628,52 +627,51 @@ static char NBTrackKey;
   CGFloat cx = floor(NSMidX(face)) + 0.5, cy = floor(NSMidY(face)) + 0.5;
   NSBezierPath *glyph = [NSBezierPath bezierPath];
   BOOL close = kind == NSWindowCloseButton;
-  unsigned ink = active || hover ? NBTitleText : NBTitleTextInactive;
 
-  if (active)
-    {
-      NSColor *base = NBHex(close ? 0xff5f57 : 0xfebc2e);
-      NSColor *top = [base highlightWithLevel: hover ? 0.3 : 0.18];
-      NSColor *bottom = [base shadowWithLevel: 0.12];
+  {
+    BOOL lit = active || hover;
+    NSColor *base = NBHex(close ? 0xff5f57 : 0xfebc2e);
+    NSColor *bar = NBHex(NBTitleInactive);
+    NSColor *top, *bottom, *rim, *inkColor;
 
-      if (pressed)
-        {
-          top = [base shadowWithLevel: 0.18];
-          bottom = [base shadowWithLevel: 0.25];
-        }
-      NBLitRect(face, 4, top, bottom, [base shadowWithLevel: 0.45],
-                pressed ? 0.1 : 0.45, NBLitShadow * 0.6, self);
-      ink = close ? 0x5c0a05 : 0x5a3d00;
-    }
-  else if (pressed)
-    NBLitRect(face, 4, NBHex(NBLitPressedTop), NBHex(NBLitPressedBottom),
-              NBHex(NBLitRim), 0, 0, self);
-  else if (hover)
-    NBLitRect(face, 4, NBHex(NBLitTop), NBHex(NBLitBottom), NBHex(NBLitRim),
-              NBLitHighlight * 1.5, NBLitShadow * 0.6, self);
-  if (kind == NSWindowCloseButton && [w isDocumentEdited])
-    {
-      [NBHex(ink) set];
-      [[NSBezierPath bezierPathWithOvalInRect:
-         NSMakeRect(cx - 3, cy - 3, 6, 6)] fill];
-      return;
-    }
-  [glyph setLineWidth: 1.4];
-  [glyph setLineCapStyle: NSRoundLineCapStyle];
-  if (kind == NSWindowCloseButton)
-    {
-      [glyph moveToPoint: NSMakePoint(cx - 3.5, cy - 3.5)];
-      [glyph lineToPoint: NSMakePoint(cx + 3.5, cy + 3.5)];
-      [glyph moveToPoint: NSMakePoint(cx - 3.5, cy + 3.5)];
-      [glyph lineToPoint: NSMakePoint(cx + 3.5, cy - 3.5)];
-    }
-  else
-    {
+    if (!lit)
+      base = [base blendedColorWithFraction: 0.6 ofColor: bar];
+    top = [base highlightWithLevel: hover ? 0.3 : 0.18];
+    bottom = [base shadowWithLevel: 0.12];
+    rim = [base shadowWithLevel: lit ? 0.45 : 0.3];
+    if (pressed)
+      {
+        top = [base shadowWithLevel: 0.18];
+        bottom = [base shadowWithLevel: 0.25];
+      }
+    NBLitRect(face, 4, top, bottom, rim, pressed || !lit ? 0.1 : 0.45,
+              lit ? NBLitShadow * 0.6 : 0, self);
+    inkColor = NBHex(close ? 0x5c0a05 : 0x5a3d00);
+    if (!lit)
+      inkColor = [inkColor blendedColorWithFraction: 0.45 ofColor: base];
+    if (kind == NSWindowCloseButton && [w isDocumentEdited])
+      {
+        [inkColor set];
+        [[NSBezierPath bezierPathWithOvalInRect:
+           NSMakeRect(cx - 3, cy - 3, 6, 6)] fill];
+        return;
+      }
+    [glyph setLineWidth: 1.4];
+    [glyph setLineCapStyle: NSRoundLineCapStyle];
+    if (close)
+      {
+        [glyph moveToPoint: NSMakePoint(cx - 3.5, cy - 3.5)];
+        [glyph lineToPoint: NSMakePoint(cx + 3.5, cy + 3.5)];
+        [glyph moveToPoint: NSMakePoint(cx - 3.5, cy + 3.5)];
+        [glyph lineToPoint: NSMakePoint(cx + 3.5, cy - 3.5)];
+      }
+    else
       /* NeXT's miniaturize: a small window. */
       [glyph appendBezierPathWithRect: NSMakeRect(cx - 3.5, cy - 3.5, 7, 7)];
-    }
-  [NBHex(ink) set];
-  [glyph stroke];
+    [inkColor set];
+    [glyph stroke];
+    return;
+  }
 }
 
 - (void) mouseEntered: (NSEvent *)event
