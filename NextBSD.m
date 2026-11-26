@@ -1463,6 +1463,73 @@ NBRingForControl(NSView *view)
     }
 }
 
+/*
+ * An outline's disclosure (File Viewer's sidebar): a chevron, › closed
+ * and ⌄ open, in the secondary text colour, rather than NeXT's solid
+ * triangles. Laid out as GSTheme does (the arrow image's size, the
+ * indentation, the delegate's say through -outlineView:willDisplay-
+ * OutlineCell:...), so rows keep their places.
+ */
+- (NSRect) drawOutlineCell: (NSTableColumn *)tb
+               outlineView: (NSOutlineView *)outlineView
+                      item: (id)item
+               drawingRect: (NSRect)inputRect
+                  rowIndex: (NSInteger)rowIndex
+{
+  NSRect drawingRect = inputRect;
+  BOOL open = [outlineView isItemExpanded: item];
+  BOOL expandable = [outlineView isExpandable: item];
+  NSImage *arrow = [NSImage imageNamed: open ? @"common_ArrowDownH"
+                                             : @"common_ArrowRightH"];
+  NSSize size = arrow != nil ? [arrow size] : NSMakeSize(14, 14);
+  NSImage *blank = AUTORELEASE([[NSImage alloc] initWithSize: size]);
+  NSCell *cell = AUTORELEASE([[NSCell alloc] initImageCell: blank]);
+  CGFloat indent = [outlineView indentationPerLevel]
+                   * [outlineView levelForItem: item];
+  NSRect r = [outlineView frameOfOutlineCellAtRow: rowIndex];
+  id delegate = [outlineView delegate];
+
+  if ([delegate respondsToSelector:
+        @selector(outlineView:willDisplayOutlineCell:forTableColumn:item:)])
+    [delegate outlineView: outlineView willDisplayOutlineCell: cell
+           forTableColumn: tb item: item];
+  if ([cell image] == nil)
+    {
+      drawingRect.origin.x += indent;
+      drawingRect.size.width -= indent;
+      return drawingRect;
+    }
+  r.size.width = size.width;
+  r.size.height = size.height + 5;
+  if (expandable)
+    {
+      NSBezierPath *chevron = [NSBezierPath bezierPath];
+      CGFloat cx = floor(NSMidX(r)) + 0.5, cy = floor(NSMidY(r)) + 0.5;
+      CGFloat dy = [outlineView isFlipped] ? -1 : 1;
+
+      if (open)
+        {
+          [chevron moveToPoint: NSMakePoint(cx - 4, cy + 2 * dy)];
+          [chevron lineToPoint: NSMakePoint(cx, cy - 2 * dy)];
+          [chevron lineToPoint: NSMakePoint(cx + 4, cy + 2 * dy)];
+        }
+      else
+        {
+          [chevron moveToPoint: NSMakePoint(cx - 2, cy - 4)];
+          [chevron lineToPoint: NSMakePoint(cx + 2, cy)];
+          [chevron lineToPoint: NSMakePoint(cx - 2, cy + 4)];
+        }
+      [chevron setLineWidth: 1.5];
+      [chevron setLineCapStyle: NSRoundLineCapStyle];
+      [chevron setLineJoinStyle: NSRoundLineJoinStyle];
+      [NBHex(NBHeaderText) set];
+      [chevron stroke];
+    }
+  drawingRect.origin.x += indent + r.size.width + 5;
+  drawingRect.size.width -= indent + r.size.width + 5;
+  return drawingRect;
+}
+
 /* Room for the segmented tabs: a control's height, not the old tab
    images'. */
 - (CGFloat) tabHeightForType: (NSTabViewType)type
