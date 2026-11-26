@@ -250,11 +250,14 @@ NBLitRect(NSRect r, CGFloat radius, NSColor *top, NSColor *bottom,
   RELEASE(gradient);
   if (highlight > 0)
     {
-      CGFloat y = flipped ? NSMinY(face) + 1.0 : NSMaxY(face) - 1.0;
+      /* The pixel row just inside the rim, on whole pixels: the face is
+         at half pixels (for the rim's line), and a highlight there
+         smeared over two rows at half strength at 1x. */
+      CGFloat y = flipped ? floor(NSMinY(face)) + 1.0 : ceil(NSMaxY(face)) - 2.0;
+      CGFloat x = floor(NSMinX(face) + radius * 0.6);
+      CGFloat w = ceil(NSMaxX(face) - radius * 0.6) - x;
       [[NSColor colorWithCalibratedWhite: 1 alpha: highlight] set];
-      NSRectFillUsingOperation(NSMakeRect(NSMinX(face) + radius * 0.6, y,
-                                          NSWidth(face) - radius * 1.2, 1.0),
-                               NSCompositeSourceOver);
+      NSRectFillUsingOperation(NSMakeRect(x, y, w, 1.0), NSCompositeSourceOver);
     }
   if (rim != nil)
     {
@@ -1521,6 +1524,66 @@ NBRingForControl(NSView *view)
 - (NSColor *) menuItemBackgroundColor
 {
   return NBHex(NBMenu);
+}
+
+/*
+ * Group boxes (NSBox with a border): a soft rounded panel a shade off
+ * the window, with a hairline edge, and the title above it at its left,
+ * rather than NeXT's groove with the title centred across the line.
+ * GNUstep still lays the box out, so its contents stay where they were;
+ * the panel starts just below the title. Separators, custom boxes and
+ * borderless ones are drawn as GSTheme draws them.
+ */
+- (void) drawBoxInClipRect: (NSRect)clipRect
+                   boxType: (NSBoxType)boxType
+                borderType: (NSBorderType)borderType
+                    inView: (NSBox *)box
+{
+  NSRect panel = [box borderRect];
+  NSRect title = [box titleRect];
+  BOOL hasTitle = [box titlePosition] == NSAtTop;
+  NSBezierPath *path;
+
+  if (boxType == NSBoxSeparator || boxType == NSBoxCustom
+      || borderType == NSNoBorder
+      || ([box titlePosition] != NSNoTitle && !hasTitle)
+      || [self tilesNamed: GSBoxBorder state: GSThemeNormalState] != nil)
+    {
+      [super drawBoxInClipRect: clipRect boxType: boxType
+                    borderType: borderType inView: box];
+      return;
+    }
+  [[[box window] backgroundColor] set];
+  NSRectFill(clipRect);
+  if (hasTitle)
+    {
+      /* below the title: the border rect's top is the title's middle */
+      if ([box isFlipped])
+        {
+          CGFloat top = NSMaxY(title) + 1;
+          panel.size.height = NSMaxY(panel) - top;
+          panel.origin.y = top;
+        }
+      else
+        panel.size.height = NSMinY(title) - 1 - NSMinY(panel);
+    }
+  panel = NSInsetRect(NSIntegralRect(panel), 0.5, 0.5);
+  if (NSWidth(panel) > 2 && NSHeight(panel) > 2)
+    {
+      path = [NSBezierPath bezierPathWithRoundedRect: panel
+                                             xRadius: 8 yRadius: 8];
+      [(nbLight ? [NSColor colorWithCalibratedWhite: 0 alpha: 0.035]
+                : [NSColor colorWithCalibratedWhite: 1 alpha: 0.035]) set];
+      [path fill];
+      [NBHex(NBSeparator) set];
+      [path setLineWidth: 1];
+      [path stroke];
+    }
+  if (hasTitle)
+    {
+      title.origin.x = floor(NSMinX(panel) + 4);
+      [[box titleCell] drawWithFrame: title inView: box];
+    }
 }
 
 /* A menu item draws only its highlight: the rest is the panel's or the
