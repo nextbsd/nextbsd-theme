@@ -121,6 +121,7 @@ static unsigned NBControl, NBControlPressed, NBControlBorder, NBField, NBFieldBo
 static unsigned NBAccent, NBAccentText, NBTitle, NBTitleInactive, NBTitleText;
 static unsigned NBTitleTextInactive, NBSeparator, NBWindowBorder, NBWindowBorderInactive;
 static unsigned NBPlane, NBKnob, NBKnobPressed, NBHeaderPressed, NBHeaderText;
+static unsigned NBMenu;
 
 static void
 NBApplyPalette(void)
@@ -134,6 +135,7 @@ NBApplyPalette(void)
       NBWindowBorder = 0x333845; NBWindowBorderInactive = 0x262a32;
       NBPlane = 0x15171c; NBKnob = 0x3a3f4b; NBKnobPressed = 0x555b68;
       NBHeaderPressed = 0x1d2027; NBHeaderText = 0x9a9daa;
+      NBMenu = 0x1a1d24;
     }
   else
     {
@@ -144,6 +146,7 @@ NBApplyPalette(void)
       NBWindowBorder = 0xb4b8c1; NBWindowBorderInactive = 0xcdd0d6;
       NBPlane = 0xf4f4f6; NBKnob = 0xc3c6ce; NBKnobPressed = 0xa5a9b2;
       NBHeaderPressed = 0xe6e7eb; NBHeaderText = 0x6b6f7a;
+      NBMenu = 0xffffff;
     }
 }
 
@@ -674,6 +677,12 @@ static NSDictionary *lightInfo = nil;
 
 - (NSColor *) colorNamed: (NSString *)name state: (GSThemeControlState)state
 {
+  /* A NeXT menu's title row (GSTitleView): the title in the title colour
+     on the menu's own colour, so it reads in Light too (white by default). */
+  if ([name isEqual: @"GSMenuBarTitle"])
+    return NBHex(NBTitleText);
+  if ([name isEqual: @"GSMenuBar"])
+    return NBHex(NBMenu);
   if (nbLight && [name isEqual: @"highlightedTableRowBackgroundColor"])
     return NBHex(0xb6e3f2);
   if (nbLight && [name isEqual: @"highlightedTableRowTextColor"])
@@ -773,6 +782,29 @@ static NSDictionary *lightInfo = nil;
                          dirtyRect: (NSRect)dirtyRect
                         horizontal: (BOOL)horizontal
 {
+  if (!horizontal && [self tilesNamed: GSMenuVerticalBackground
+                                state: GSThemeNormalState] == nil)
+    {
+      /* NeXT menus, submenus and pop-up lists, as in the design: one
+         rounded panel with a thin border, see-through outside its
+         corners (the window is made non-opaque and its corners cleared,
+         as for title bars), the title row and the items drawn on it. */
+      NSWindow *w = [menuView window];
+      NSBezierPath *panel = [NSBezierPath
+        bezierPathWithRoundedRect: NSInsetRect(bounds, 0.5, 0.5)
+                          xRadius: 7 yRadius: 7];
+
+      if ([w isOpaque])
+        [w setOpaque: NO];
+      NSRectFillUsingOperation(NSIntersectionRect(bounds, dirtyRect),
+                               NSCompositeClear);
+      [NBHex(NBMenu) set];
+      [panel fill];
+      [NBHex(NBControlBorder) set];
+      [panel setLineWidth: 1];
+      [panel stroke];
+      return;
+    }
   if (!horizontal || [self tilesNamed: GSMenuHorizontalBackground
                                 state: GSThemeNormalState] != nil)
     {
@@ -1309,6 +1341,54 @@ NBRingForControl(NSView *view)
       [item drawLabel: truncate inRect: r];
       x += s.width;
     }
+}
+
+/* Menu items: the menu's colour, no bevel between them, a rounded
+   highlight inset from the panel's edge. */
+- (NSColor *) menuBackgroundColor
+{
+  return NBHex(NBMenu);
+}
+
+- (NSColor *) menuItemBackgroundColor
+{
+  return NBHex(NBMenu);
+}
+
+- (NSColor *) menuBorderColor
+{
+  return NBHex(NBControlBorder);
+}
+
+- (BOOL) drawsBorderForMenuItemCell: (NSMenuItemCell *)cell
+                              state: (GSThemeControlState)state
+                       isHorizontal: (BOOL)horizontal
+{
+  return NO;
+}
+
+- (CGFloat) menuItemBackgroundRadius
+{
+  return 4.0;
+}
+
+- (NSEdgeInsets) menuItemAreaInsets
+{
+  return NSEdgeInsetsMake(4.0, 4.0, 4.0, 4.0);
+}
+
+/* The title row of a NeXT menu: on the panel, with a hairline under it,
+   not GSTheme's black bar. GNUstep draws the title in the rect returned. */
+- (NSRect) drawMenuTitleBackground: (GSTitleView *)aTitleView
+                        withBounds: (NSRect)bounds
+                          withClip: (NSRect)clipRect
+{
+  if ([self tilesNamed: GSMenuTitleBackground state: GSThemeNormalState] != nil)
+    return [super drawMenuTitleBackground: aTitleView withBounds: bounds
+                                 withClip: clipRect];
+  [NBHex(NBSeparator) set];
+  NSRectFill(NSMakeRect(NSMinX(bounds) + 6, NSMinY(bounds), NSWidth(bounds) - 12, 1));
+  return NSInsetRect(bounds, 4, 0);
 }
 
 /* GNUstep hardcodes a light gray resize bar when a theme has no tiles for it. */
