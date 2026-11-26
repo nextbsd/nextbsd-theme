@@ -3,3 +3,20 @@ the SIL Open Font License 1.1, and its license is in its folder.
 
 Inter 4.1            Fonts/Inter           https://github.com/rsms/inter
 JetBrains Mono 2.304 Fonts/JetBrainsMono   https://github.com/JetBrains/JetBrainsMono
+
+The folder and disk icons in ThemeImages are from Rik icons by Bertrand
+Dekoninck (https://github.com/gnustep/icons-rik), licensed under the
+Creative Commons Attribution 4.0 International License
+(https://creativecommons.org/licenses/by/4.0/). They are not covered by
+this theme's BSD license.
+
+From Rik's PNG1024 folder, scaled to 96 by 96 pixels:
+  ApplicationFolder, Desktop, DocsFolder, DownloadFolder, Folder, GSFolder,
+  ImageFolder, LibraryFolder, MusicFolder, VideoFolder (Rik's MovieFolder),
+  HardDisk and Root_PC (Rik's HardDisk), RemovableDisk (Rik's
+  DriveRemovableMedia), each also as common_<name>.
+
+Changed for NextBSD: HomeDirectory, LocalFolder, NetworkFolder,
+PublicFolder, TemplatesFolder, DeveloperFolder and VolumesFolder are Rik's
+Folder with a symbol drawn for NextBSD in the style of Rik's own (a house,
+a computer, a globe, two people, a dashed page, a hammer, a disk drive).
