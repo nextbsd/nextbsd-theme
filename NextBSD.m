@@ -29,6 +29,8 @@ static BOOL fitMiniwindowIcons = NO;
 /* The Mac menu bar's opacity: see-through as macOS's, a little less,
    since nothing blurs what's behind it. */
 static const CGFloat NBMenuBarOpacity = 0.8;
+/* A NeXT menu's panel: frosted, over WindowServer's blur. */
+static const CGFloat NBMenuOpacity = 0.82;
 
 static NSImage *
 NBFittedMiniwindowImage(NSView *view, NSImage *image)
@@ -821,7 +823,7 @@ static NSDictionary *lightInfo = nil;
   if ([name isEqual: @"GSMenuBarTitle"])
     return NBHex(NBTitleText);
   if ([name isEqual: @"GSMenuBar"])
-    return NBHex(NBMenu);
+    return [NBHex(NBMenu) colorWithAlphaComponent: NBMenuOpacity];
   if (nbLight && [name isEqual: @"highlightedTableRowBackgroundColor"])
     return NBHex(0xb6e3f2);
   if (nbLight && [name isEqual: @"highlightedTableRowTextColor"])
@@ -937,7 +939,9 @@ static NSDictionary *lightInfo = nil;
         [w setOpaque: NO];
       NSRectFillUsingOperation(NSIntersectionRect(bounds, dirtyRect),
                                NSCompositeClear);
-      [NBHex(NBMenu) set];
+      /* Frosted: a little see-through, WindowServer blurring what is
+         under it, as a Mac's menus are. */
+      [[NBHex(NBMenu) colorWithAlphaComponent: NBMenuOpacity] set];
       [panel fill];
       [NBHex(NBControlBorder) set];
       [panel setLineWidth: 1];
