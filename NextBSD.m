@@ -930,6 +930,95 @@ static NSDictionary *lightInfo = nil;
   return 14.0;
 }
 
+/*
+ * Sliders, as in the design: a thin rounded track, filled with the accent
+ * up to the knob (grey in a window that isn't key), and a light round
+ * knob with a thin border. Circular sliders and themes with track tiles
+ * are drawn as GSTheme draws them.
+ */
+static BOOL
+NBPlainLinearSlider(NSCell *cell, GSTheme *theme, BOOL horizontal)
+{
+  return [(NSSliderCell *)cell sliderType] == NSLinearSlider
+    && [theme tilesNamed: (horizontal ? GSSliderHorizontalTrack
+                                      : GSSliderVerticalTrack)
+                   state: GSThemeNormalState] == nil;
+}
+
+- (void) drawSliderBorderAndBackground: (NSBorderType)aType
+                                 frame: (NSRect)cellFrame
+                                inCell: (NSCell *)cell
+                          isHorizontal: (BOOL)horizontal
+{
+  if (NBPlainLinearSlider(cell, self, horizontal))
+    return;		/* the track is drawn in -drawBarInside: */
+  [super drawSliderBorderAndBackground: aType frame: cellFrame inCell: cell
+                          isHorizontal: horizontal];
+}
+
+- (void) drawBarInside: (NSRect)rect
+                inCell: (NSCell *)cell
+               flipped: (BOOL)flipped
+{
+  BOOL horizontal = NSWidth(rect) > NSHeight(rect);
+  NSSliderCell *slider = (NSSliderCell *)cell;
+  NSRect knob, track, filled;
+  BOOL active;
+
+  if (!NBPlainLinearSlider(cell, self, horizontal))
+    {
+      [super drawBarInside: rect inCell: cell flipped: flipped];
+      return;
+    }
+  knob = [slider knobRectFlipped: flipped];
+  active = [[[cell controlView] window] isKeyWindow] && [cell isEnabled];
+  if (horizontal)
+    {
+      track = NSMakeRect(NSMinX(rect) + 2, floor(NSMidY(rect)) - 2,
+                         NSWidth(rect) - 4, 4);
+      filled = track;
+      filled.size.width = MAX(0, NSMidX(knob) - NSMinX(track));
+    }
+  else
+    {
+      track = NSMakeRect(floor(NSMidX(rect)) - 2, NSMinY(rect) + 2,
+                         4, NSHeight(rect) - 4);
+      filled = track;
+      if (flipped)
+        {
+          filled.origin.y = NSMidY(knob);
+          filled.size.height = MAX(0, NSMaxY(track) - NSMidY(knob));
+        }
+      else
+        filled.size.height = MAX(0, NSMidY(knob) - NSMinY(track));
+    }
+  [NBHex(NBFieldBorder) set];
+  [[NSBezierPath bezierPathWithRoundedRect: track xRadius: 2 yRadius: 2] fill];
+  [NBHex(active ? NBAccent : 0x8a8f9b) set];
+  [[NSBezierPath bezierPathWithRoundedRect: filled xRadius: 2 yRadius: 2] fill];
+}
+
+- (void) drawKnobInCell: (NSCell *)cell
+{
+  NSView *view = [cell controlView];
+  NSSliderCell *slider = (NSSliderCell *)cell;
+  NSRect knob = [slider knobRectFlipped: [view isFlipped]];
+  BOOL horizontal = NSWidth([view bounds]) > NSHeight([view bounds]);
+  NSRect dot;
+
+  if (!NBPlainLinearSlider(cell, self, horizontal))
+    {
+      [super drawKnobInCell: cell];
+      return;
+    }
+  dot = NSMakeRect(floor(NSMidX(knob) - 7.5) + 0.5, floor(NSMidY(knob) - 7.5) + 0.5,
+                   14, 14);
+  [NBHex(0xf1f2f5) set];
+  [[NSBezierPath bezierPathWithOvalInRect: dot] fill];
+  [NBHex(0x9a9daa) set];
+  [[NSBezierPath bezierPathWithOvalInRect: dot] stroke];
+}
+
 /* Text fields and other bezeled boxes: a dark well, rounded, thin border. */
 - (NSRect) drawWhiteBezel: (NSRect)border withClip: (NSRect)clip
 {
