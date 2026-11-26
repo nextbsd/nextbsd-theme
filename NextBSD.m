@@ -122,6 +122,10 @@ static unsigned NBAccent, NBAccentText, NBTitle, NBTitleInactive, NBTitleText;
 static unsigned NBTitleTextInactive, NBSeparator, NBWindowBorder, NBWindowBorderInactive;
 static unsigned NBPlane, NBKnob, NBKnobPressed, NBHeaderPressed, NBHeaderText;
 static unsigned NBMenu;
+/* The lit controls: face top and bottom, pressed, rim, and how strong the
+   top highlight and the shadow under them are. */
+static unsigned NBLitTop, NBLitBottom, NBLitPressedTop, NBLitPressedBottom, NBLitRim;
+static CGFloat NBLitHighlight, NBLitShadow;
 
 static void
 NBApplyPalette(void)
@@ -136,6 +140,9 @@ NBApplyPalette(void)
       NBPlane = 0x15171c; NBKnob = 0x3a3f4b; NBKnobPressed = 0x555b68;
       NBHeaderPressed = 0x1d2027; NBHeaderText = 0x9a9daa;
       NBMenu = 0x1a1d24;
+      NBLitTop = 0x454a55; NBLitBottom = 0x32363e;
+      NBLitPressedTop = 0x24272d; NBLitPressedBottom = 0x2e3239; NBLitRim = 0x0b0c0f;
+      NBLitHighlight = 0.16; NBLitShadow = 0.35;
     }
   else
     {
@@ -147,6 +154,9 @@ NBApplyPalette(void)
       NBPlane = 0xf4f4f6; NBKnob = 0xc3c6ce; NBKnobPressed = 0xa5a9b2;
       NBHeaderPressed = 0xe6e7eb; NBHeaderText = 0x6b6f7a;
       NBMenu = 0xffffff;
+      NBLitTop = 0xffffff; NBLitBottom = 0xeceef2;
+      NBLitPressedTop = 0xcfd3da; NBLitPressedBottom = 0xdee1e6; NBLitRim = 0xb3b7bf;
+      NBLitHighlight = 0.9; NBLitShadow = 0.08;
     }
 }
 
@@ -194,6 +204,59 @@ NBRoundRect(NSRect r, CGFloat radius, NSColor *fill, NSColor *stroke)
   if (stroke != nil)
     {
       [stroke set];
+      [path setLineWidth: 1.0];
+      [path stroke];
+    }
+}
+
+/*
+ * A control lit from above (nextbsd/nextbsd#708, the controls mockup): a
+ * soft gradient from top to bottom, a crisp rim, a one-pixel highlight
+ * just inside its top edge and a little shadow under it, so it stands
+ * off the window rather than being printed on it. view says which way
+ * is up (a flipped view's y grows down).
+ */
+static void
+NBLitRect(NSRect r, CGFloat radius, NSColor *top, NSColor *bottom,
+          NSColor *rim, CGFloat highlight, CGFloat shadow, NSView *view)
+{
+  BOOL flipped = [view isFlipped];
+  NSRect face = NSInsetRect(r, 0.5, 0.5);
+  NSBezierPath *path;
+  NSGradient *gradient;
+
+  /* Room for the shadow below. */
+  face.size.height -= 1.0;
+  if (flipped == NO)
+    face.origin.y += 1.0;
+  if (NSWidth(face) < 2.0 || NSHeight(face) < 2.0)
+    return;
+  radius = MIN(radius, MIN(NSWidth(face), NSHeight(face)) / 2.0);
+
+  if (shadow > 0)
+    {
+      NSRect under = NSOffsetRect(face, 0, flipped ? 1.0 : -1.0);
+      [[NSColor colorWithCalibratedWhite: 0 alpha: shadow] set];
+      [[NSBezierPath bezierPathWithRoundedRect: under
+                                       xRadius: radius yRadius: radius] fill];
+    }
+  path = [NSBezierPath bezierPathWithRoundedRect: face
+                                         xRadius: radius yRadius: radius];
+  gradient = [[NSGradient alloc] initWithStartingColor: flipped ? top : bottom
+                                           endingColor: flipped ? bottom : top];
+  [gradient drawInBezierPath: path angle: 90];
+  RELEASE(gradient);
+  if (highlight > 0)
+    {
+      CGFloat y = flipped ? NSMinY(face) + 1.0 : NSMaxY(face) - 1.0;
+      [[NSColor colorWithCalibratedWhite: 1 alpha: highlight] set];
+      NSRectFillUsingOperation(NSMakeRect(NSMinX(face) + radius * 0.6, y,
+                                          NSWidth(face) - radius * 1.2, 1.0),
+                               NSCompositeSourceOver);
+    }
+  if (rim != nil)
+    {
+      [rim set];
       [path setLineWidth: 1.0];
       [path stroke];
     }
@@ -546,6 +609,73 @@ static char NBTrackKey;
   [glyph stroke];
 }
 
+/* NeXT: miniaturize at the left, close at the right, each a small lit
+   button with its symbol, shown as the traffic lights are: in colour on
+   the active window (close red, miniaturize amber, the symbol a darker
+   shade of it), a faint symbol alone on an inactive one, which the
+   pointer lights grey. A close button whose window has unsaved changes
+   shows a dot. */
+- (void) nbDrawNeXT
+{
+  NSWindow *w = [self window];
+  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  NSInteger kind = [self tag];
+  BOOL pressed = [[self cell] isHighlighted], hover = [self nbHover];
+  NSRect b = NSInsetRect([self bounds], 0.5, 0.5);
+  CGFloat side = MIN(MIN(NSWidth(b), NSHeight(b)), 17.0);
+  NSRect face = NSMakeRect(floor(NSMidX(b) - side / 2), floor(NSMidY(b) - side / 2),
+                           side, side);
+  CGFloat cx = floor(NSMidX(face)) + 0.5, cy = floor(NSMidY(face)) + 0.5;
+  NSBezierPath *glyph = [NSBezierPath bezierPath];
+  BOOL close = kind == NSWindowCloseButton;
+  unsigned ink = active || hover ? NBTitleText : NBTitleTextInactive;
+
+  if (active)
+    {
+      NSColor *base = NBHex(close ? 0xff5f57 : 0xfebc2e);
+      NSColor *top = [base highlightWithLevel: hover ? 0.3 : 0.18];
+      NSColor *bottom = [base shadowWithLevel: 0.12];
+
+      if (pressed)
+        {
+          top = [base shadowWithLevel: 0.18];
+          bottom = [base shadowWithLevel: 0.25];
+        }
+      NBLitRect(face, 4, top, bottom, [base shadowWithLevel: 0.45],
+                pressed ? 0.1 : 0.45, NBLitShadow * 0.6, self);
+      ink = close ? 0x5c0a05 : 0x5a3d00;
+    }
+  else if (pressed)
+    NBLitRect(face, 4, NBHex(NBLitPressedTop), NBHex(NBLitPressedBottom),
+              NBHex(NBLitRim), 0, 0, self);
+  else if (hover)
+    NBLitRect(face, 4, NBHex(NBLitTop), NBHex(NBLitBottom), NBHex(NBLitRim),
+              NBLitHighlight * 1.5, NBLitShadow * 0.6, self);
+  if (kind == NSWindowCloseButton && [w isDocumentEdited])
+    {
+      [NBHex(ink) set];
+      [[NSBezierPath bezierPathWithOvalInRect:
+         NSMakeRect(cx - 3, cy - 3, 6, 6)] fill];
+      return;
+    }
+  [glyph setLineWidth: 1.4];
+  [glyph setLineCapStyle: NSRoundLineCapStyle];
+  if (kind == NSWindowCloseButton)
+    {
+      [glyph moveToPoint: NSMakePoint(cx - 3.5, cy - 3.5)];
+      [glyph lineToPoint: NSMakePoint(cx + 3.5, cy + 3.5)];
+      [glyph moveToPoint: NSMakePoint(cx - 3.5, cy + 3.5)];
+      [glyph lineToPoint: NSMakePoint(cx + 3.5, cy - 3.5)];
+    }
+  else
+    {
+      /* NeXT's miniaturize: a small window. */
+      [glyph appendBezierPathWithRect: NSMakeRect(cx - 3.5, cy - 3.5, 7, 7)];
+    }
+  [NBHex(ink) set];
+  [glyph stroke];
+}
+
 - (void) mouseEntered: (NSEvent *)event
 {
   [self nbSetHover: YES];
@@ -569,6 +699,11 @@ static char NBTrackKey;
   if ([nbWindowStyle isEqual: @"tiling"])
     {
       [self nbDrawTiling];
+      return;
+    }
+  if ([self tag] == NSWindowCloseButton || [self tag] == NSWindowMiniaturizeButton)
+    {
+      [self nbDrawNeXT];
       return;
     }
   if (![self nbHover] || ![self isEnabled] || hover == nil)
@@ -919,23 +1054,38 @@ static NSDictionary *lightInfo = nil;
   if (NBIsDefaultButton(cell) && [cell isKindOfClass: [NSButtonCell class]]
       && ![cell isKindOfClass: [NSPopUpButtonCell class]])
     {
+      /* Glass in the accent: lighter at the top, a bright highlight, a
+         rim a shade darker. */
       NSColor *accent = NBHex(NBAccent);
+      NSColor *top = [accent highlightWithLevel: 0.35];
+      NSColor *bottom = [accent shadowWithLevel: 0.12];
       if (pressed)
-        accent = [accent shadowWithLevel: 0.15];
-      NBRoundRect(frame, NBRadius, accent, accent);
+        {
+          top = [accent shadowWithLevel: 0.1];
+          bottom = [accent shadowWithLevel: 0.2];
+        }
+      NBLitRect(frame, NBRadius + 1, top, bottom, [accent shadowWithLevel: 0.4],
+                pressed ? 0.15 : 0.45, nbLight ? 0.18 : 0.45, view);
       return;
     }
   if (state == GSThemeSelectedState
-      || state == GSThemeSelectedFirstResponderState)
+      || state == GSThemeSelectedFirstResponderState || pressed)
     {
-      /* An on/off button that is on (a toolbar's view buttons). */
-      NBRoundRect(frame, NBRadius, [NSColor selectedControlColor],
-                  NBHex(NBControlBorder));
+      /* Pressed, or an on/off button that is on (a toolbar's view
+         buttons): pushed in, darker, no highlight. */
+      NBLitRect(frame, NBRadius + 1, NBHex(NBLitPressedTop), NBHex(NBLitPressedBottom),
+                NBHex(NBLitRim), 0, NBLitShadow * 0.5, view);
       return;
     }
-  NBRoundRect(frame, NBRadius,
-              NBHex(pressed ? NBControlPressed : NBControl),
-              NBHex(NBControlBorder));
+  if ([cell respondsToSelector: @selector(isEnabled)] && ![cell isEnabled])
+    {
+      /* Disabled: flat and quiet, no light on it. */
+      NBLitRect(frame, NBRadius + 1, NBHex(NBLitBottom), NBHex(NBLitBottom),
+                [NBHex(NBLitRim) colorWithAlphaComponent: 0.6], 0, 0, view);
+      return;
+    }
+  NBLitRect(frame, NBRadius + 1, NBHex(NBLitTop), NBHex(NBLitBottom),
+            NBHex(NBLitRim), NBLitHighlight, NBLitShadow, view);
 }
 
 /* The default button shows by its colour, as on macOS, not by GNUstep's
