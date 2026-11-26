@@ -614,69 +614,113 @@ static char NBTrackKey;
   [glyph stroke];
 }
 
-/* NeXT: miniaturize at the left, close at the right, each a small lit
-   button with its symbol, in colour (close red, miniaturize amber, the
-   symbol a darker shade of it): bright on the active window, dimmed
-   toward the title bar on an inactive one, which the pointer brightens.
-   A close button whose window has unsaved changes shows a dot. */
+/* NeXT: miniaturize at the left, close at the right, each a flat square a
+   step lighter than the title bar (graphite in Dark, silver in Light) with
+   its symbol in the title's colour. At 1x everything sits on whole pixels:
+   the face and its edge are filled rects and the symbol is set pixel by
+   pixel, so nothing is smeared by anti-aliasing. An inactive window's
+   buttons fade toward the title bar; the pointer brings them back. A close
+   button whose window has unsaved changes shows a dot. */
 - (void) nbDrawNeXT
 {
   NSWindow *w = [self window];
   BOOL active = [w isKeyWindow] || [w isMainWindow];
-  NSInteger kind = [self tag];
   BOOL pressed = [[self cell] isHighlighted], hover = [self nbHover];
-  NSRect b = NSInsetRect([self bounds], 0.5, 0.5);
-  CGFloat side = MIN(MIN(NSWidth(b), NSHeight(b)), 17.0);
-  NSRect face = NSMakeRect(floor(NSMidX(b) - side / 2), floor(NSMidY(b) - side / 2),
-                           side, side);
-  CGFloat cx = floor(NSMidX(face)) + 0.5, cy = floor(NSMidY(face)) + 0.5;
-  NSBezierPath *glyph = [NSBezierPath bezierPath];
-  BOOL close = kind == NSWindowCloseButton;
+  BOOL close = [self tag] == NSWindowCloseButton;
+  BOOL lit = active || hover;
+  CGFloat scale = [w respondsToSelector: @selector(userSpaceScaleFactor)]
+    ? [w userSpaceScaleFactor] : 1.0;
+  NSRect b = [self bounds];
+  int side = (int)MIN(MIN(NSWidth(b), NSHeight(b)), 15.0);
+  NSRect face, inner;
+  unsigned faceHex, edgeHex, inkHex;
+  NSColor *faceColor, *edgeColor, *ink, *bar = NBHex(active ? NBTitle : NBTitleInactive);
+  CGFloat x0, y0;
+  int c, i;
 
+  /* An odd side gives the symbol a centre pixel. */
+  if (side % 2 == 0)
+    side--;
+  face = NSMakeRect(floor(NSMidX(b) - side / 2.0), floor(NSMidY(b) - side / 2.0),
+                    side, side);
+  if (nbLight)
+    {
+      faceHex = pressed ? 0xd9dbe0 : (hover ? 0xffffff : 0xf8f8fa);
+      edgeHex = pressed ? 0x9ea2ab : 0xb6b9c1;
+      inkHex = 0x3b3e46;
+    }
+  else
+    {
+      faceHex = pressed ? 0x22252c : (hover ? 0x3a3e48 : 0x2d3038);
+      edgeHex = pressed ? 0x15171b : 0x3d414b;
+      inkHex = 0xc6c9d1;
+    }
+  faceColor = NBHex(faceHex);
+  edgeColor = NBHex(edgeHex);
+  ink = NBHex(inkHex);
+  if (!lit)
+    {
+      faceColor = [faceColor blendedColorWithFraction: 0.5 ofColor: bar];
+      edgeColor = [edgeColor blendedColorWithFraction: 0.5 ofColor: bar];
+      ink = NBHex(NBTitleTextInactive);
+    }
+
+  /* The face: the edge colour, then the face one pixel in, with the corner
+     pixels left out so it reads as softly rounded. */
   {
-    BOOL lit = active || hover;
-    NSColor *base = NBHex(close ? 0xff5f57 : 0xfebc2e);
-    NSColor *bar = NBHex(NBTitleInactive);
-    NSColor *top, *bottom, *rim, *inkColor;
-
-    if (!lit)
-      base = [base blendedColorWithFraction: 0.6 ofColor: bar];
-    top = [base highlightWithLevel: hover ? 0.3 : 0.18];
-    bottom = [base shadowWithLevel: 0.12];
-    rim = [base shadowWithLevel: lit ? 0.45 : 0.3];
-    if (pressed)
-      {
-        top = [base shadowWithLevel: 0.18];
-        bottom = [base shadowWithLevel: 0.25];
-      }
-    NBLitRect(face, 4, top, bottom, rim, pressed || !lit ? 0.1 : 0.45,
-              lit ? NBLitShadow * 0.6 : 0, self);
-    inkColor = NBHex(close ? 0x5c0a05 : 0x5a3d00);
-    if (!lit)
-      inkColor = [inkColor blendedColorWithFraction: 0.45 ofColor: base];
-    if (kind == NSWindowCloseButton && [w isDocumentEdited])
-      {
-        [inkColor set];
-        [[NSBezierPath bezierPathWithOvalInRect:
-           NSMakeRect(cx - 3, cy - 3, 6, 6)] fill];
-        return;
-      }
-    [glyph setLineWidth: 1.4];
-    [glyph setLineCapStyle: NSRoundLineCapStyle];
-    if (close)
-      {
-        [glyph moveToPoint: NSMakePoint(cx - 3.5, cy - 3.5)];
-        [glyph lineToPoint: NSMakePoint(cx + 3.5, cy + 3.5)];
-        [glyph moveToPoint: NSMakePoint(cx - 3.5, cy + 3.5)];
-        [glyph lineToPoint: NSMakePoint(cx + 3.5, cy - 3.5)];
-      }
-    else
-      /* NeXT's miniaturize: a small window. */
-      [glyph appendBezierPathWithRect: NSMakeRect(cx - 3.5, cy - 3.5, 7, 7)];
-    [inkColor set];
-    [glyph stroke];
-    return;
+    CGFloat px = 1.0 / scale;
+    inner = NSInsetRect(face, px, px);
+    [edgeColor set];
+    NSRectFill(NSMakeRect(NSMinX(face) + px, NSMinY(face), side - 2 * px, side));
+    NSRectFill(NSMakeRect(NSMinX(face), NSMinY(face) + px, side, side - 2 * px));
+    [faceColor set];
+    NSRectFill(inner);
   }
+
+  /* The symbol, 7 points across, centred on the centre pixel. */
+  c = side / 2;
+  x0 = NSMinX(face) + c;
+  y0 = NSMinY(face) + c;
+  [ink set];
+  if (close && [w isDocumentEdited])
+    {
+      /* A dot: 5 by 5 with the corners left out. */
+      NSRectFill(NSMakeRect(x0 - 1, y0 - 2, 3, 5));
+      NSRectFill(NSMakeRect(x0 - 2, y0 - 1, 5, 3));
+      return;
+    }
+  if (scale > 1.5)
+    {
+      /* At 2x and up there are enough pixels for a smooth stroke. */
+      NSBezierPath *glyph = [NSBezierPath bezierPath];
+      CGFloat cx = x0 + 0.5, cy = y0 + 0.5;
+
+      [glyph setLineWidth: 1.0];
+      if (close)
+        {
+          [glyph moveToPoint: NSMakePoint(cx - 3, cy - 3)];
+          [glyph lineToPoint: NSMakePoint(cx + 3, cy + 3)];
+          [glyph moveToPoint: NSMakePoint(cx - 3, cy + 3)];
+          [glyph lineToPoint: NSMakePoint(cx + 3, cy - 3)];
+        }
+      else
+        [glyph appendBezierPathWithRect: NSMakeRect(cx - 3, cy - 3, 6, 6)];
+      [glyph stroke];
+      return;
+    }
+  if (close)
+    {
+      /* An X of single pixels, corner to corner. */
+      for (i = -3; i <= 3; i++)
+        {
+          NSRectFill(NSMakeRect(x0 + i, y0 + i, 1, 1));
+          if (i != 0)
+            NSRectFill(NSMakeRect(x0 + i, y0 - i, 1, 1));
+        }
+    }
+  else
+    /* NeXT's miniaturize: a small window, 7 by 7. */
+    NSFrameRect(NSMakeRect(x0 - 3, y0 - 3, 7, 7));
 }
 
 - (void) mouseEntered: (NSEvent *)event
