@@ -15,27 +15,30 @@ main (int argc, const char *argv[])
 {
   CREATE_AUTORELEASE_POOL (pool);
   [NSApplication sharedApplication];
-  unsigned black = 0x000000, plane = 0x16161b, control = 0x26262d, raised = 0x33333a;
-  unsigned bevel = 0x55555f, shade = 0x0a0a0a, label = 0xb8b8c0, text = 0xf5f5f7, accent = 0x00d4ff, selection = 0x0a5fd1;
+  /* The redesign (nextbsd/nextbsd#708, mockups/desktop.html): a cool,
+     blue-tinted dark grey with the cyan accent. */
+  unsigned black = 0x000000, page = 0x0b0c10, plane = 0x15171c, row = 0x17191f, line = 0x23262e;
+  unsigned control = 0x23262e, border = 0x3a3f4b, title = 0x111318, dim = 0x6b6f7c;
+  unsigned label = 0x9a9daa, text = 0xe3e5ea, accent = 0x00d4ff, selection = 0x1b4a63;
   struct { NSString *name; unsigned color; } colors[] = {
-    {@"alternateSelectedControlColor", selection}, {@"alternateSelectedControlTextColor", text},
+    {@"alternateSelectedControlColor", selection}, {@"alternateSelectedControlTextColor", 0xffffff},
     {@"controlBackgroundColor", plane}, {@"controlColor", control},
-    {@"controlDarkShadowColor", shade}, {@"controlHighlightColor", bevel},
-    {@"controlLightHighlightColor", bevel}, {@"controlShadowColor", shade},
-    {@"controlTextColor", text}, {@"disabledControlTextColor", bevel},
-    {@"gridColor", raised}, {@"headerColor", control}, {@"headerTextColor", label},
-    {@"highlightColor", bevel}, {@"keyboardFocusIndicatorColor", accent},
-    {@"knobColor", bevel}, {@"labelColor", text}, {@"secondaryLabelColor", label},
-    {@"tertiaryLabelColor", label}, {@"quaternaryLabelColor", label},
-    {@"scrollBarColor", control}, {@"secondarySelectedControlColor", raised},
-    {@"selectedControlColor", selection}, {@"selectedControlTextColor", text},
-    {@"selectedKnobColor", label}, {@"selectedMenuItemColor", text},
-    {@"selectedMenuItemTextColor", black}, {@"selectedTextBackgroundColor", selection},
-    {@"selectedTextColor", text}, {@"shadowColor", black},
-    {@"textBackgroundColor", black}, {@"textColor", text},
-    {@"windowBackgroundColor", plane}, {@"windowFrameColor", black},
-    {@"windowFrameTextColor", text}, {@"rowBackgroundColor", plane},
-    {@"alternateRowBackgroundColor", plane}, {@"toolTipColor", control},
+    {@"controlDarkShadowColor", black}, {@"controlHighlightColor", border},
+    {@"controlLightHighlightColor", border}, {@"controlShadowColor", page},
+    {@"controlTextColor", text}, {@"disabledControlTextColor", dim},
+    {@"gridColor", line}, {@"headerColor", plane}, {@"headerTextColor", label},
+    {@"highlightColor", border}, {@"keyboardFocusIndicatorColor", accent},
+    {@"knobColor", border}, {@"labelColor", text}, {@"secondaryLabelColor", label},
+    {@"tertiaryLabelColor", dim}, {@"quaternaryLabelColor", dim},
+    {@"scrollBarColor", plane}, {@"secondarySelectedControlColor", 0x2c3038},
+    {@"selectedControlColor", selection}, {@"selectedControlTextColor", 0xffffff},
+    {@"selectedKnobColor", label}, {@"selectedMenuItemColor", selection},
+    {@"selectedMenuItemTextColor", 0xffffff}, {@"selectedTextBackgroundColor", selection},
+    {@"selectedTextColor", 0xffffff}, {@"shadowColor", black},
+    {@"textBackgroundColor", page}, {@"textColor", text},
+    {@"windowBackgroundColor", plane}, {@"windowFrameColor", title},
+    {@"windowFrameTextColor", 0xe9eaef}, {@"rowBackgroundColor", plane},
+    {@"alternateRowBackgroundColor", row}, {@"toolTipColor", 0x1a1d24},
     {@"toolTipTextColor", text},
     {@"terminalBackgroundColor", 0x1e1e1e}, {@"terminalBlueColor", 0x6fb3ff},
     {@"terminalBlackColor", 0x8a8a8a},
