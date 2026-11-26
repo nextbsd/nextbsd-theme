@@ -464,6 +464,11 @@ NBRetile(NSView *view)
     }
   switch (style)
     {
+      /* 0 is GNUstep's default for a button made in code (no style set),
+         which is most of them. */
+      case 0:
+      case NSNeXTBezelStyle:
+      case NSPushButtonBezelStyle:
       case NSRoundRectBezelStyle:
       case NSTexturedRoundedBezelStyle:
       case NSRoundedBezelStyle:
@@ -478,7 +483,7 @@ NBRetile(NSView *view)
         [super drawButton: frame in: cell view: view style: style state: state];
         return;
     }
-  if (style == NSRoundedBezelStyle)
+  if (style == NSRoundedBezelStyle || style == 0)
     {
       /* GNUstep's rounded push buttons leave room for a NeXT bevel
          around the face; use a little of it. */
