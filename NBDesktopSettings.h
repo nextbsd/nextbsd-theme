@@ -47,6 +47,7 @@
 #define NBMenuStyleKey      @"NBMenuStyle"      /* nextstep inwindow macmenubar */
 #define NBMinimizeStyleKey  @"NBMinimizeStyle"  /* nextstep previews dock */
 #define NBDockStyleKey      @"NBDockStyle"      /* nextstep mac tiling */
+#define NBScrollerStyleKey  @"NBScrollerStyle"  /* nextstep mac split */
 
 /* The per-mode dictionaries: the user's (defaults) and the theme's
    (Info.plist), each { stacking = {...}; tiling = {...}; }. */
