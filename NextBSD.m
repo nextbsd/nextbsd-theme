@@ -318,12 +318,17 @@ static char NBTrackKey;
     return;
   objc_setAssociatedObject(self, &NBHoverKey,
     hover ? [NSNumber numberWithBool: YES] : nil, OBJC_ASSOCIATION_RETAIN);
+  /* Leaving a window (it closes, its views go one by one): nothing to
+     redraw, and the others may already be out of it, where a redraw
+     would mix two windows' views. */
+  if ([self window] == nil || [[self superview] window] != [self window])
+    return;
   /* The traffic lights show their symbols together, as on a Mac. */
   {
     NSEnumerator *e = [[[self superview] subviews] objectEnumerator];
     NSView *v;
     while ((v = [e nextObject]) != nil)
-      if ([v isKindOfClass: [NBTitleButton class]])
+      if ([v isKindOfClass: [NBTitleButton class]] && [v window] == [self window])
         [v setNeedsDisplay: YES];
   }
   [self setNeedsDisplay: YES];
@@ -414,7 +419,8 @@ static char NBTrackKey;
 - (void) viewWillMoveToWindow: (NSWindow *)window
 {
   [self nbUntrack];
-  [self nbSetHover: NO];
+  /* Forget the pointer without drawing: the window is going. */
+  objc_setAssociatedObject(self, &NBHoverKey, nil, OBJC_ASSOCIATION_RETAIN);
   [super viewWillMoveToWindow: window];
 }
 
@@ -814,12 +820,22 @@ static NSDictionary *lightInfo = nil;
                             horizontal: horizontal];
       return;
     }
-  /* The Mac menu bar along the top of the screen (an app's bar, or a
-     status item, in a window of its own at menu bar level or above) is
-     see-through with no line along the bottom, as on macOS: the same
-     alpha in every bar and status item, so the strip reads as one. A
-     menu bar in a window (inwindow) stays solid, with its line. */
-  if ([[menuView window] level] >= NSMainMenuWindowLevel)
+  /* The Mac menu bar along the top of the screen (an app's bar, in a
+     window of its own at menu bar level) is see-through with no line
+     along the bottom, as on macOS. A status item (the clock, Bluetooth,
+     in a window above the bar's level) draws no background: the app's
+     bar runs the whole width under it (or WindowServer's, when the app
+     has none), and a second layer of the same colour made the items a
+     lighter block. A menu bar in a window (inwindow) stays solid, with
+     its line. */
+  if ([[menuView window] level] > NSMainMenuWindowLevel)
+    {
+      [[menuView window] setOpaque: NO];
+      NSRectFillUsingOperation(NSIntersectionRect(bounds, dirtyRect),
+                               NSCompositeClear);
+      return;
+    }
+  if ([[menuView window] level] == NSMainMenuWindowLevel)
     {
       [[menuView window] setOpaque: NO];
       [[[self menuBarBackgroundColor]
@@ -1353,6 +1369,26 @@ NBRingForControl(NSView *view)
 - (NSColor *) menuItemBackgroundColor
 {
   return NBHex(NBMenu);
+}
+
+/* A menu item draws only its highlight: the rest is the panel's or the
+   menu bar's, which are drawn already (an item filling its own frame
+   would put solid blocks on the see-through bar). */
+- (void) drawBorderAndBackgroundForMenuItemCell: (NSMenuItemCell *)cell
+                                      withFrame: (NSRect)cellFrame
+                                         inView: (NSView *)controlView
+                                          state: (GSThemeControlState)state
+                                   isHorizontal: (BOOL)isHorizontal
+{
+  if (state != GSThemeHighlightedState && state != GSThemeSelectedState
+      && [self tilesNamed: (isHorizontal ? GSMenuHorizontalItem : GSMenuVerticalItem)
+                    state: state] == nil)
+    return;
+  [super drawBorderAndBackgroundForMenuItemCell: cell
+                                      withFrame: cellFrame
+                                         inView: controlView
+                                          state: state
+                                   isHorizontal: isHorizontal];
 }
 
 - (NSColor *) menuBorderColor
