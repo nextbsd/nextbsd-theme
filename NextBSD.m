@@ -134,18 +134,15 @@ NBRoundRect(NSRect r, CGFloat radius, NSColor *fill, NSColor *stroke)
     }
 }
 
-/* The default button (Return) of the key window. */
+/* The default button (Return). Every window's, not only the key
+   window's: a panel's buttons are drawn before it becomes key and not
+   again when it does, which left a dialog's default button grey. */
 static BOOL
 NBIsDefaultButton(NSCell *cell)
 {
-  NSView *view;
-
   if (![cell isKindOfClass: [NSButtonCell class]] || ![cell isEnabled])
     return NO;
-  if (![[(NSButtonCell *)cell keyEquivalent] isEqualToString: @"\r"])
-    return NO;
-  view = [cell controlView];
-  return view == nil || [[view window] isKeyWindow];
+  return [[(NSButtonCell *)cell keyEquivalent] isEqualToString: @"\r"];
 }
 
 /*
@@ -507,6 +504,19 @@ NBRetile(NSView *view)
   NBRoundRect(frame, NBRadius,
               NBHex(pressed ? NBControlPressed : NBControl),
               NBHex(NBControlBorder));
+}
+
+/* The default button shows by its colour, as on macOS, not by GNUstep's
+   Return arrow beside its title (which also squeezed the title). A
+   button given the arrow image elsewhere loses it here too. */
+- (void) setKeyEquivalent: (NSString *)key
+            forButtonCell: (NSButtonCell *)cell
+{
+  if ([cell image] == [NSImage imageNamed: @"common_ret"])
+    {
+      [cell setImage: nil];
+      [cell setAlternateImage: nil];
+    }
 }
 
 /* Scrollers: a slot the colour of the window, no dimple in the knob. */
