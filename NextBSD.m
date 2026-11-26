@@ -1463,9 +1463,21 @@ NBRingForControl(NSView *view)
     }
 }
 
+/* Room for the segmented tabs: a control's height, not the old tab
+   images'. */
+- (CGFloat) tabHeightForType: (NSTabViewType)type
+{
+  CGFloat h = [super tabHeightForType: type];
+
+  if (type == NSTopTabsBezelBorder && h < 22)
+    return 22;
+  return h;
+}
+
 /*
- * Tabs along the top: the selected tab a raised rounded control, the
- * others plain labels, over a panel with a thin rounded border. The tabs
+ * Tabs along the top, as a segmented control: one recessed track behind
+ * every tab, the selected tab a raised lit segment in it, hairlines
+ * between the others, over a panel with a thin rounded border. The tabs
  * keep GSTheme's positions (each label's own width plus the gaps the
  * tab images would take), so clicking works as before.
  */
@@ -1495,23 +1507,84 @@ NBRingForControl(NSView *view)
   y = NSMinY(bounds);
   if ([view isFlipped] == NO)
     y = NSMaxY(panel);
-  for (i = 0; i < n; i++)
-    {
-      NSTabViewItem *item = [items objectAtIndex: i];
-      NSSize s = [item sizeOfLabel: truncate];
-      NSImage *gap = [self imageForTabPart: (i == 0 ? GSTabSelectedLeft
-                                             : GSTabUnSelectedJunction)
-                                      type: type];
-      NSRect r;
+  {
+    /* NSTabView finds a click's tab in the rect its label was last
+       drawn in, so the tabs can go where they look best: a segmented
+       control centred over the panel, each segment its label and a
+       margin either side. */
+    const CGFloat pad = 14;
+    NSRect *segs = malloc(sizeof(NSRect) * (n > 0 ? n : 1));
+    CGFloat total = 0, h = tabHeight - 2;
+    NSInteger chosen = -1;
+    NSRect track;
 
-      x += gap ? [gap size].width : 8;
-      r = NSMakeRect(x, y, s.width, tabHeight);
-      if ([item tabState] == NSSelectedTab)
-        NBRoundRect(NSInsetRect(r, -8, 1), NBRadius, NBHex(NBControl),
-                    NBHex(NBControlBorder));
-      [item drawLabel: truncate inRect: r];
-      x += s.width;
-    }
+    if (segs == NULL)
+      return;
+    for (i = 0; i < n; i++)
+      {
+        NSSize s = [[items objectAtIndex: i] sizeOfLabel: truncate];
+
+        segs[i].size = NSMakeSize(ceil(s.width) + 2 * pad, h);
+        total += NSWidth(segs[i]);
+        if ([[items objectAtIndex: i] tabState] == NSSelectedTab)
+          chosen = (NSInteger)i;
+      }
+    x = floor(NSMidX(bounds) - total / 2);
+    if (x < NSMinX(bounds) + 4)
+      x = NSMinX(bounds) + 4;
+    for (i = 0; i < n; i++)
+      {
+        segs[i].origin = NSMakePoint(x, y + 1);
+        x += NSWidth(segs[i]);
+      }
+    if (n > 0)
+      {
+        track = NSMakeRect(NSMinX(segs[0]), y + 1, total, h);
+        NBLitRect(track, NBRadius + 2, NBHex(NBLitPressedTop),
+                  NBHex(NBLitPressedBottom), NBHex(NBLitRim), 0, 0, view);
+        for (i = 0; i + 1 < n; i++)
+          {
+            /* a hairline between two tabs, unless one is chosen */
+            if ((NSInteger)i == chosen || (NSInteger)i + 1 == chosen)
+              continue;
+            [NBHex(NBLitRim) set];
+            NSRectFill(NSMakeRect(NSMaxX(segs[i]), NSMinY(track) + 5, 1,
+                                  NSHeight(track) - 10));
+          }
+        if (chosen >= 0)
+          NBLitRect(NSInsetRect(segs[chosen], 1, 1), NBRadius + 1,
+                    NBHex(NBLitTop), NBHex(NBLitBottom), NBHex(NBLitRim),
+                    NBLitHighlight, NBLitShadow, view);
+      }
+    for (i = 0; i < n; i++)
+      {
+        NSTabViewItem *item = [items objectAtIndex: i];
+        NSString *text = [item label];
+        NSDictionary *attr;
+        NSSize s;
+
+        /* The whole segment is the tab's click target: -drawLabel:inRect:
+           keeps the rect it's given, but draws the label at its left, so
+           it gets the segment with nothing to draw into, and the label is
+           drawn here in the segment's middle. */
+        [NSGraphicsContext saveGraphicsState];
+        NSRectClip(NSZeroRect);
+        [item drawLabel: truncate inRect: NSMakeRect(NSMinX(segs[i]), y,
+                                                     NSWidth(segs[i]),
+                                                     tabHeight)];
+        [NSGraphicsContext restoreGraphicsState];
+        if (text == nil)
+          continue;
+        attr = [NSDictionary dictionaryWithObjectsAndKeys:
+          [(NSTabView *)view font], NSFontAttributeName,
+          [NSColor controlTextColor], NSForegroundColorAttributeName, nil];
+        s = [text sizeWithAttributes: attr];
+        [text drawAtPoint: NSMakePoint(floor(NSMidX(segs[i]) - s.width / 2),
+                                       floor(NSMidY(segs[i]) - s.height / 2))
+           withAttributes: attr];
+      }
+    free(segs);
+  }
 }
 
 /* Menu items: the menu's colour, no bevel between them, a rounded
