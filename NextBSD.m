@@ -1155,7 +1155,10 @@ static NSDictionary *lightInfo = nil;
 {
   NSButtonCell *cell = (NSButtonCell *)[super cellForScrollerKnob: horizontal];
 
+  /* No title either: without its image a button cell draws its default
+     title ("Button"), a "B" in the middle of a slim knob. */
   [cell setImage: nil];
+  [cell setTitle: @""];
   return cell;
 }
 
