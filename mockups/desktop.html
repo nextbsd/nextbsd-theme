@@ -1,0 +1,496 @@
+<title>NextBSD Theme</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a live desktop first (two windows, drag and click to focus), then a reference strip of every control state. One dark look; the theme itself is the subject. */
+:root{
+  --page:#0b0c10; --fg:#e9eaef; --muted:#9a9daa; --line:#2a2e38;
+  --sans:"Inter",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+body{background:var(--page);color:var(--fg);font:14px/1.55 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:26px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#00d4ff}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.1;margin:6px 0 8px;letter-spacing:-.02em}
+.lede{color:var(--muted);max-width:70ch;margin:0}
+h2{font-size:20px;margin:42px 0 10px}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:18px 0 10px;font-size:12.5px;color:var(--muted)}
+.bar .grp{display:flex;align-items:center;gap:8px}
+.pick{display:flex;border:1px solid #3a3f4b;border-radius:7px;overflow:hidden}
+.pick button{all:unset;cursor:pointer;padding:5px 12px;font:500 12px var(--sans);color:#c9cbd3}
+.pick button[aria-pressed="true"]{background:#1c3a46;color:#fff}
+.pick button:focus-visible{outline:2px solid #00d4ff;outline-offset:-2px}
+.sw8{all:unset;cursor:pointer;width:18px;height:18px;border-radius:50%;border:2px solid transparent}
+.sw8[aria-pressed="true"]{border-color:#fff}
+.sw8:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* ===================== THE THEME (tokens per theme) ===================== */
+.desk{
+  /* Proposed */
+  --win:#15171c; --winb:#333845; --wini:#262a32; --title:#111318; --titlei:#0f1013;
+  --tt:#e9eaef; --tti:#6b6f7c; --ctl:#23262e; --ctlh:#2b2f38; --ctlp:#1a1c22; --ctlb:#3a3f4b;
+  --field:#0b0c10; --fieldb:#2e323c; --txt:#e3e5ea; --sub:#9a9daa; --sep:#23262e;
+  --sel:#1b4a63; --seli:#2c3038; --acc:#00d4ff; --acct:#04141a; --rad:6px; --wrad:9px;
+  --hdr:#15171c; --row2:#17191f; --menu:#1a1d24; --menusel:#1b4a63;
+  --shadow:0 26px 60px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.4); --shadowi:0 10px 26px rgba(0,0,0,.45);
+  --bev:none; --bevp:none;
+}
+.desk.cur{
+  /* Today's theme (ThemeColors.clr): NeXT bevels, square, black frames */
+  --win:#16161b; --winb:#000; --wini:#000; --title:#000; --titlei:#000;
+  --tt:#f5f5f7; --tti:#b8b8c0; --ctl:#26262d; --ctlh:#26262d; --ctlp:#33333a; --ctlb:#000;
+  --field:#000; --fieldb:#000; --txt:#f5f5f7; --sub:#b8b8c0; --sep:#33333a;
+  --sel:#0a5fd1; --seli:#33333a; --rad:0px; --wrad:0px;
+  --hdr:#26262d; --row2:#16161b; --menu:#16161b; --menusel:#f5f5f7;
+  --shadow:none; --shadowi:none;
+  --bev:inset 1px 1px 0 #55555f,inset -1px -1px 0 #0a0a0a; --bevp:inset 1px 1px 0 #0a0a0a,inset -1px -1px 0 #55555f;
+}
+.desk{position:relative;height:clamp(560px,66vw,700px);border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#07080b;font-size:12.5px;color:var(--txt);user-select:none}
+.desk.cur{background:#07080b}
+.tbl table{font-size:inherit}
+.desk{height:clamp(620px,74vw,800px)}
+.desk.full{background:radial-gradient(ellipse at 40% 35%,#11141b 0%,#06070a 70%)}
+/* NeXTSTEP app menu, themed */
+.amenu{position:absolute;left:10px;top:10px;z-index:900;width:170px;background:color-mix(in srgb,var(--menu) 92%,transparent);border:1px solid var(--ctlb);border-radius:calc(var(--rad) + 2px);box-shadow:0 14px 34px rgba(0,0,0,.55);padding:4px;backdrop-filter:blur(10px)}
+.desk.cur .amenu{border-radius:0;padding:0;border-color:#000;box-shadow:var(--bev);background:#16161b}
+.amenu .t{padding:5px 10px 6px;font-weight:700;color:#fff;border-bottom:1px solid var(--sep);margin-bottom:3px}
+.desk.cur .amenu .t{background:#000;margin:0;border-bottom:0}
+.amenu button,.sub button{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;width:100%;padding:3px 10px;border-radius:calc(var(--rad) - 2px);cursor:pointer;color:var(--txt)}
+.amenu button:hover,.amenu button.open,.sub button:hover{background:var(--menusel);color:#fff}
+.desk.cur .amenu button:hover,.desk.cur .amenu button.open,.desk.cur .sub button:hover{color:#000;border-radius:0}
+.amenu kbd,.sub kbd{font:11px var(--sans);color:var(--sub)}
+.amenu .arr{color:var(--sub)}
+.sub{position:absolute;z-index:901;width:170px;background:var(--menu);border:1px solid var(--ctlb);border-radius:calc(var(--rad) + 2px);box-shadow:0 14px 34px rgba(0,0,0,.55);padding:4px}
+.desk.cur .sub{border-radius:0;padding:0;border-color:#000;box-shadow:var(--bev)}
+/* Dock */
+.dockr{position:absolute;right:10px;top:10px;bottom:10px;z-index:800;display:flex;flex-direction:column;gap:8px;align-items:center}
+.tile{all:unset;position:relative;width:60px;height:60px;border-radius:14px;display:grid;place-items:center;cursor:pointer;transition:transform .12s}
+.tile:hover{transform:scale(1.06)}
+.tile:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.desk.cur .tile{border-radius:0;background:#16161b;border-color:#000;box-shadow:var(--bev)}
+.tile .dot{position:absolute;left:-7px;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:#e9eaef;opacity:0}
+.tile.run .dot{opacity:1}
+.tile svg{width:56px;height:56px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.dsep{width:30px;height:1px;background:#2c3039;margin:2px 0}
+.clock{width:56px;height:56px;border-radius:13px;background:#1a1d24;border:1px solid #2c3039;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 9px var(--sans);color:#9a9daa;line-height:1.2}
+.clock b{font:700 15px var(--sans);color:#fff}
+.desk.cur .clock{border-radius:0;background:#16161b;border-color:#000;box-shadow:var(--bev)}
+.dspace{flex:1}
+.fic{width:16px;height:16px;flex:none;vertical-align:-3px;margin-right:6px}
+.side div{display:flex;align-items:center}
+.side .fic{margin-right:6px}
+.grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;padding:10px;align-content:start}
+.grid button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:var(--rad);text-align:center;font-size:11.5px;color:var(--txt)}
+.grid button .fic{width:56px;height:56px;margin:0}
+.grid button.sel span{background:var(--sel);color:#fff;border-radius:4px;padding:0 4px}
+.win.inactive .grid button.sel span{background:var(--seli);color:var(--txt)}
+.grid button:focus-visible{outline:2px solid var(--acc)}
+.preset{all:unset;cursor:pointer;width:120px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:calc(var(--rad) + 2px);border:1px solid var(--ctlb);background:var(--ctl);box-shadow:var(--bev);font-size:12px}
+.preset.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,var(--ctl))}
+.win.inactive .preset.on{border-color:#8a8f9b;background:var(--ctl)}
+.preset:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pv{width:100px;height:58px;border-radius:4px;background:#07080b;border:1px solid #2c3039;position:relative;overflow:hidden}
+.pv::before,.pv::after{content:"";position:absolute;background:#2b2f38;border-radius:2px}
+.pv-next::before{left:6px;top:6px;width:14px;height:22px}.pv-next::after{left:30px;top:12px;width:46px;height:34px}
+.pv-mac::before{left:0;top:0;right:0;height:5px}.pv-mac::after{left:22px;top:12px;width:52px;height:32px}
+.pv-tiling::before{left:5px;top:5px;width:43px;height:48px}.pv-tiling::after{left:52px;top:5px;width:43px;height:48px}
+.form[hidden]{display:none}
+/* terminal */
+.term{flex:1;min-height:0;background:#0b0c10;padding:8px 10px;font:12px/1.5 var(--mono);color:#d6d8de;overflow:hidden}
+.desk.cur .term{background:#1e1e1e}
+.term .p{color:var(--acc)}
+.term .cursor{display:inline-block;width:7px;height:13px;vertical-align:-2px;background:#d6d8de;animation:blink 1s steps(1) infinite}
+.win.inactive .term .cursor{background:transparent;outline:1px solid #6b6f7c}
+@keyframes blink{50%{opacity:0}}
+.upd{flex:1;display:flex;gap:14px;padding:16px;align-items:flex-start}
+.upd .big{width:52px;height:52px;flex:none}
+.upd h4{margin:0 0 2px;font-size:15px}
+.upd p{margin:0 0 12px;color:var(--sub)}
+.mbar{position:absolute;inset:0 0 auto;height:24px;background:#111318;display:flex;align-items:center;gap:14px;padding:0 10px;font:600 12px var(--sans);color:#d9dbe2;z-index:50}
+.mbar span:not(:first-child){font-weight:400;color:#aeb1bb}
+.mbar .r{margin-left:auto;font-weight:500}
+.dock{position:absolute;right:8px;top:34px;display:grid;gap:8px;z-index:1}
+.dock i{display:block;width:34px;height:34px;border-radius:7px;background:#1d2027;border:1px solid #2c3039}
+
+/* windows */
+.win{position:absolute;display:flex;flex-direction:column;background:var(--win);border:1px solid var(--winb);border-radius:var(--wrad);box-shadow:var(--shadow);overflow:hidden}
+.win.inactive{border-color:var(--wini);box-shadow:var(--shadowi)}
+.tbar{height:28px;flex:none;display:flex;align-items:center;justify-content:center;position:relative;background:var(--title);border-bottom:1px solid var(--sep);font-weight:600;color:var(--tt);cursor:grab}
+.win.inactive .tbar{background:var(--titlei);color:var(--tti)}
+.desk.cur .tbar{border-bottom:1px solid #33333a}
+.wb{position:absolute;top:6px;width:15px;height:15px;border-radius:4px;border:1px solid #3a3f4b;display:grid;place-items:center;color:#5d626f;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.wb svg{width:9px;height:9px}
+.wb.mini{left:7px}
+.wb.close{right:7px}
+.win:not(.inactive) .tbar:hover .wb{color:#8a8f9b;border-color:#4a4f5b}
+.wb.close:hover{background:#e0626b;border-color:#e0626b;color:#2a0508}
+.wb.mini:hover{background:#ffb454;border-color:#ffb454;color:#2a1803}
+.win.inactive .wb{border-color:#262a32;color:#3a3e48}
+.win.inactive .wb.close:hover{background:#e0626b;border-color:#e0626b;color:#2a0508}
+.win.inactive .wb.mini:hover{background:#ffb454;border-color:#ffb454;color:#2a1803}
+.desk.cur .wb{border-radius:0;border-color:#55555f;color:#f5f5f7;box-shadow:var(--bev);background:#26262d}
+.wbody{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* controls */
+.btn{all:unset;box-sizing:border-box;height:26px;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--rad);background:var(--ctl);border:1px solid var(--ctlb);color:var(--txt);font:500 12.5px var(--sans);cursor:pointer;box-shadow:var(--bev);transition:background .12s}
+.btn:hover{background:var(--ctlh)}
+.btn:active,.btn.press{background:var(--ctlp);box-shadow:var(--bevp);transform:translateY(.5px)}
+.btn.def{background:var(--acc);border-color:var(--acc);color:var(--acct);font-weight:600}
+.btn.def:hover{filter:brightness(1.08)}
+.win.inactive .btn.def{background:var(--ctl);border-color:var(--ctlb);color:var(--txt);font-weight:500}
+.desk.cur .btn.def{background:#26262d;color:#f5f5f7;border:1px solid #000;font-weight:600}
+.desk.cur .btn.def::after{content:"⏎";font-size:11px;opacity:.8}
+.btn[disabled]{opacity:.4;cursor:default;pointer-events:none}
+.btn:focus-visible,.fld:focus-within,.pop:focus-visible,.seg button:focus-visible,.chk:focus-visible,.sw:focus-visible,.rng:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.ibtn{all:unset;width:30px;height:26px;display:inline-grid;place-items:center;border-radius:var(--rad);color:#7b8090;cursor:pointer;transition:color .15s,background .15s}
+.ibtn svg{width:16px;height:16px}
+.ibtn:hover{background:var(--ctlh);color:#f1f2f5}
+.ibtn.on{background:var(--ctlh);color:var(--acc)}
+.win.inactive .ibtn{color:#4a4f5b}
+.win.inactive .ibtn.on{color:#8a8f9b;background:transparent}
+.win.inactive .ibtn:hover{color:#c9cbd3}
+.desk.cur .ibtn{background:var(--ctl);box-shadow:var(--bev);margin-right:2px}
+.desk.cur .ibtn.on{box-shadow:var(--bevp);background:#33333a;color:#f5f5f7}
+.fld{display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:var(--rad);background:var(--field);border:1px solid var(--fieldb);box-sizing:border-box;box-shadow:var(--bevp)}
+.fld input{all:unset;flex:1;min-width:0;color:var(--txt);font:12.5px var(--sans)}
+.fld input::placeholder{color:#6f7380}
+.fld:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.desk.cur .fld:focus-within{box-shadow:var(--bevp)}
+.pop{all:unset;box-sizing:border-box;position:relative;height:26px;min-width:130px;padding:0 28px 0 11px;display:inline-flex;align-items:center;border-radius:var(--rad);background:var(--ctl);border:1px solid var(--ctlb);color:var(--txt);cursor:pointer;box-shadow:var(--bev)}
+.pop::after{content:"";position:absolute;right:10px;top:8px;width:5px;height:5px;border:solid #9a9daa;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+.menu{position:absolute;z-index:60;min-width:160px;background:var(--menu);border:1px solid var(--ctlb);border-radius:calc(var(--rad) + 1px);box-shadow:0 16px 40px rgba(0,0,0,.6);padding:4px}
+.desk.cur .menu{padding:0;box-shadow:var(--bev);border-color:#000}
+.menu button{all:unset;display:block;box-sizing:border-box;width:100%;padding:4px 10px;border-radius:calc(var(--rad) - 2px);cursor:pointer;color:var(--txt)}
+.menu button:hover,.menu button:focus-visible{background:var(--menusel);outline:none}
+.desk.cur .menu button:hover,.desk.cur .menu button:focus-visible{color:#000}
+.seg{display:inline-flex;border:1px solid var(--ctlb);border-radius:var(--rad);overflow:hidden;background:var(--ctl);box-shadow:var(--bev)}
+.seg button{all:unset;cursor:pointer;padding:4px 12px;color:var(--txt);border-right:1px solid var(--ctlb)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--sel);color:#fff}
+.win.inactive .seg button[aria-pressed="true"]{background:var(--seli)}
+.chk{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.chk .b{width:15px;height:15px;border-radius:4px;border:1px solid var(--ctlb);background:var(--field);display:grid;place-items:center;box-shadow:var(--bevp)}
+.chk[aria-checked="true"] .b{background:var(--acc);border-color:var(--acc)}
+.chk[aria-checked="true"] .b::after{content:"";width:7px;height:4px;border:solid var(--acct);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+.chk.rad .b{border-radius:50%}
+.chk.rad[aria-checked="true"] .b::after{width:6px;height:6px;border:0;border-radius:50%;background:var(--acct);transform:none}
+.desk.cur .chk .b{border-radius:0}
+.desk.cur .chk.rad .b{border-radius:50%}
+.desk.cur .chk[aria-checked="true"] .b{background:#f5f5f7;border-color:#000}
+.win.inactive .chk[aria-checked="true"] .b{background:#8a8f9b;border-color:#8a8f9b}
+.sw{all:unset;cursor:pointer;width:34px;height:20px;border-radius:10px;background:#3a3f4b;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#e9eaef;transition:left .18s}
+.sw[aria-checked="true"]{background:var(--acc)}
+.sw[aria-checked="true"]::after{left:16px}
+.win.inactive .sw[aria-checked="true"]{background:#8a8f9b}
+.desk.cur .sw{border-radius:0;box-shadow:var(--bevp)}
+.desk.cur .sw::after{border-radius:0;background:#26262d;box-shadow:var(--bev)}
+.rng{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:linear-gradient(var(--acc),var(--acc)) 0/var(--v,50%) 100% no-repeat,#2e323c;outline:none}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#f1f2f5;border:1px solid #9a9daa;cursor:pointer}
+.rng::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:#f1f2f5;border:1px solid #9a9daa;cursor:pointer}
+.win.inactive .rng{background:linear-gradient(#8a8f9b,#8a8f9b) 0/var(--v,50%) 100% no-repeat,#2e323c}
+.prog{height:6px;border-radius:3px;background:#2e323c;overflow:hidden}
+.prog i{display:block;height:100%;width:62%;background:var(--acc);border-radius:3px}
+.desk.cur .prog,.desk.cur .prog i{border-radius:0}
+.tabs{display:flex;gap:2px;padding:6px 10px 0;border-bottom:1px solid var(--sep)}
+.tabs button{all:unset;cursor:pointer;padding:5px 12px;border-radius:var(--rad) var(--rad) 0 0;color:var(--sub);border:1px solid transparent;border-bottom:0;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--txt);background:var(--win);border-color:var(--sep)}
+.tabs button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.form{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px 14px;align-items:center;align-content:start;padding:14px 16px;flex:1;min-height:0;overflow:auto}
+.form label.l{color:var(--sub);text-align:right}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.foot{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;border-top:1px solid var(--sep)}
+/* table */
+.tbl{flex:1;min-height:0;overflow:auto}
+.tbl table{width:100%;border-collapse:collapse}
+.tbl th{position:sticky;top:0;background:var(--hdr);color:var(--sub);font-weight:600;font-size:11px;text-align:left;padding:5px 10px;border-bottom:1px solid var(--sep)}
+.tbl td{padding:4px 10px;white-space:nowrap}
+.tbl tr:nth-child(even) td{background:var(--row2)}
+.tbl td.s{color:var(--sub);font-variant-numeric:tabular-nums}
+.tbl tr.sel td{background:var(--sel);color:#fff}
+.win.inactive .tbl tr.sel td{background:var(--seli);color:var(--txt)}
+.ico{display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:-2px;margin-right:6px;background:linear-gradient(#7ec8ff,#2d7fc0)}
+.ico.f{background:linear-gradient(#eef1f6,#c9ced8)}
+.tools{display:flex;align-items:center;gap:2px;padding:5px 8px;border-bottom:1px solid var(--sep)}
+.gap{width:12px}
+.status{padding:3px 10px;font-size:11px;color:var(--sub);border-top:1px solid var(--sep)}
+.side{width:150px;flex:none;border-right:1px solid var(--sep);padding:6px;color:var(--txt)}
+.side b{display:block;font-weight:500;color:var(--sub);margin:4px 0 2px}
+.side div{padding:2px 6px;border-radius:calc(var(--rad) - 2px)}
+.side div.on{background:var(--sel);color:#fff}
+.win.inactive .side div.on{background:var(--seli);color:var(--txt)}
+/* thin scrollbars, proposed only */
+.desk:not(.cur) .tbl::-webkit-scrollbar{width:8px}
+.desk:not(.cur) .tbl::-webkit-scrollbar-thumb{background:#3a3f4b;border-radius:4px}
+/* sheet */
+.sheet{position:absolute;left:50%;top:28px;transform:translateX(-50%);width:min(340px,90%);background:var(--menu);border:1px solid var(--ctlb);border-top:0;border-radius:0 0 calc(var(--wrad) + 1px) calc(var(--wrad) + 1px);box-shadow:0 18px 40px rgba(0,0,0,.6);padding:16px;z-index:5}
+.sheet h4{margin:0 0 6px;font-size:13px}
+.sheet p{margin:0 0 12px;color:var(--sub)}
+
+/* reference strip */
+.ref{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.cell{background:#12141a;border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
+.cell h3{margin:0 0 10px;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cell .desk{height:auto;overflow:visible;border:0;background:transparent;padding:0}
+.states{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;font-size:12px}
+.states span{color:var(--muted)}
+.mini-win{position:relative;width:100%;height:96px}
+.mini-win .win{left:0;right:0;top:0;bottom:0}
+.note{color:var(--muted);font-size:13px;max-width:72ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <span class="eyebrow">Design · nextbsd-theme</span>
+  <h1>The NextBSD desktop, redesigned</h1>
+  <p class="lede">The proposed theme takes the dark NextBSD palette and the cyan accent. It drops the NeXT bevels for soft, rounded controls with thin borders, and title bars that quiet down when a window isn’t active. Everything below is live. Click a window to make it active, drag it by its title bar, and use the controls. Switch to <b>Today’s theme</b> to compare.</p>
+
+  <div class="bar">
+    <div class="grp">Theme <div class="pick" id="themePick"><button type="button" aria-pressed="true" data-t="new">Proposed</button><button type="button" aria-pressed="false" data-t="cur">Today’s theme</button></div></div>
+    <div class="grp" id="accPick">Accent
+      <button type="button" class="sw8" aria-pressed="true" data-a="#00d4ff" data-t="#04141a" style="background:#00d4ff" aria-label="Cyan"></button>
+      <button type="button" class="sw8" aria-pressed="false" data-a="#4c9dff" data-t="#03101f" style="background:#4c9dff" aria-label="Blue"></button>
+      <button type="button" class="sw8" aria-pressed="false" data-a="#6fd38a" data-t="#04160a" style="background:#6fd38a" aria-label="Green"></button>
+      <button type="button" class="sw8" aria-pressed="false" data-a="#ffb454" data-t="#1c1003" style="background:#ffb454" aria-label="Amber"></button>
+    </div>
+    <span>Click a window or its Dock tile to make it active; the others go inactive. The app menu at top left is the active app’s real menu. Workspace → Preferences… opens its real Preferences.</span>
+  </div>
+
+  <div class="desk full" id="desk">
+    <nav class="amenu" id="amenu" aria-label="Application menu"></nav>
+    <div class="dockr" aria-label="Dock">
+      <button type="button" class="tile run" data-open="w1" title="Workspace"><span class="dot"></span><svg viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2e38"/><stop offset="1" stop-color="#14161c"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g1)" stroke="#3a3f4b"/><path d="M32 10 52 21.5 32 33 12 21.5Z" fill="#f6f7f9"/><path d="M12 21.5 32 33v22L12 43.5Z" fill="#a9abb3"/><path d="M52 21.5 32 33v22l20-11.5Z" fill="#3c3f47"/></svg></button>
+      <button type="button" class="tile run" data-open="w3" title="Terminal"><span class="dot"></span><svg viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#0b0c10" stroke="#3a3f4b"/><rect x="2" y="2" width="60" height="12" rx="14" fill="#1d2027"/><rect x="2" y="9" width="60" height="5" fill="#1d2027"/><path d="M14 27l9 7-9 7" fill="none" stroke="#e9eaef" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 43h16" stroke="#00d4ff" stroke-width="3.5" stroke-linecap="round"/></svg></button>
+      <button type="button" class="tile" data-open="" title="Software"><span class="dot"></span><svg viewBox="0 0 64 64"><defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b4d63"/><stop offset="1" stop-color="#062a38"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g3)" stroke="#11708f"/><path d="M15 23h34l-3 28H18z" fill="#00d4ff"/><path d="M24 23v-4a8 8 0 0 1 16 0v4" fill="none" stroke="#e9fbff" stroke-width="3.5" stroke-linecap="round"/><path d="M26 34l6 6 6-6" fill="none" stroke="#04141a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="tile run" data-open="w4" title="Update"><span class="dot"></span><svg viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#26262d" stroke="#55555f"/><g transform="translate(14 3.5) scale(1.5)" fill="none" stroke="#00d4ff" stroke-width="2.4" stroke-linecap="round"><path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M17.5 3.5v4h-4"/></g><rect x="13" y="40" width="38" height="13" rx="3" fill="none" stroke="#f5f5f7" stroke-width="2.6"/><circle cx="45" cy="46.5" r="2" fill="#f5f5f7"/></svg></button>
+      <button type="button" class="tile run" data-open="w2" title="Settings"><span class="dot"></span><svg viewBox="0 0 64 64"><defs><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9dce3"/><stop offset="1" stop-color="#7d828e"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="#1d2027" stroke="#3a3f4b"/><g transform="translate(32 32)"><g fill="url(#g5)"><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(0)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(45)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(90)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(135)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(180)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(225)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(270)"/><rect x="-4" y="-23" width="8" height="10" rx="2" transform="rotate(315)"/></g><circle r="16" fill="url(#g5)"/><circle r="7" fill="#1d2027"/></g></svg></button>
+      <span class="dspace"></span>
+      <div class="clock">THU<b>14:32</b>26 NOV</div>
+      <button type="button" class="tile" title="Recycler"><svg viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#123a22" stroke="#2f6b42"/><g fill="none" stroke="#6fd38a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 26l7-12 7 12"/><path d="M40 28l8 13H35"/><path d="M27 48H14l6-11"/></g></svg></button>
+    </div>
+
+    <!-- File Viewer -->
+    <section class="win inactive" id="w1" data-app="Workspace" style="left:17%;top:5%;width:52%;height:56%" aria-label="File Viewer window">
+      <div class="tbar"><span class="wb mini" title="Miniaturize"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h6"/></svg></span>File Viewer<span class="wb close" title="Close"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span></div>
+      <div class="wbody">
+        <div class="tools">
+          <button type="button" class="ibtn" title="Back"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4L3 8l4 4"/></svg></button>
+          <button type="button" class="ibtn" title="Forward"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+          <button type="button" class="ibtn" title="Up"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button>
+          <button type="button" class="ibtn" title="Home"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5L8 3l5.5 4.5M4 6.5V13h8V6.5"/></svg></button>
+          <button type="button" class="ibtn" title="Refresh"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 8a4.5 4.5 0 1 1-1.3-3.2"/><path d="M11.5 2.5v2.5H9"/></svg></button>
+          <span class="gap"></span>
+          <span class="viewmode" style="display:contents">
+          <button type="button" class="ibtn on" title="List" data-vm="1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><circle cx="2.8" cy="4" r=".6"/><circle cx="2.8" cy="8" r=".6"/><circle cx="2.8" cy="12" r=".6"/></svg></button>
+          <button type="button" class="ibtn" title="Columns" data-vm="1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M6 3v10M10 3v10"/></svg></button>
+          <button type="button" class="ibtn" title="Icons" data-vm="1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx=".8"/><rect x="9" y="2.5" width="4.5" height="4.5" rx=".8"/><rect x="2.5" y="9" width="4.5" height="4.5" rx=".8"/><rect x="9" y="9" width="4.5" height="4.5" rx=".8"/></svg></button>
+          </span>
+          <span class="gap"></span>
+          <label class="fld" style="flex:1"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="#6f7380" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3 3"/></svg><input id="search" placeholder="Search" aria-label="Search"></label>
+        </div>
+        <div style="display:flex;flex:1;min-height:0">
+          <div class="side" id="side"></div>
+          <div class="tbl" id="listv"><table><thead><tr><th>Name</th><th>Size (bytes)</th><th>Kind</th></tr></thead><tbody id="rows"></tbody></table></div>
+          <div class="grid" id="iconv" hidden></div>
+        </div>
+        <div class="status" id="fstatus">5 items • 1 selected • 27.9 GiB available</div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="win" id="w2" data-app="Workspace" style="left:40%;top:24%;width:50%;height:72%" aria-label="Preferences window">
+      <div class="tbar"><span class="wb mini" title="Miniaturize"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h6"/></svg></span>Preferences<span class="wb close" title="Close"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span></div>
+      <div class="wbody" style="position:relative">
+        <div class="tabs" role="tablist" id="ptabs"><button type="button" role="tab" aria-selected="true" data-t="General">General</button><button type="button" role="tab" aria-selected="false" data-t="Desktop">Desktop</button><button type="button" role="tab" aria-selected="false" data-t="Dock">Dock</button><button type="button" role="tab" aria-selected="false" data-t="Background">Background</button></div>
+        <div class="form" data-tab="General"><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Show thumbnails</button><span></span><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Show hidden files and directories</button><span></span><span style="color:var(--sub)">Changes apply to all open windows.</span></div><div class="form" data-tab="Desktop" hidden><span class="l" style="grid-column:1/3;text-align:left;color:var(--txt)">Choose your style:</span><div style="grid-column:1/3;display:flex;gap:10px;justify-content:center"><button type="button" class="preset on" aria-pressed="true"><span class="pv pv-next"></span>NeXT</button><button type="button" class="preset" aria-pressed="false"><span class="pv pv-mac"></span>Mac</button><button type="button" class="preset" aria-pressed="false"><span class="pv pv-tiling"></span>Tiling</button></div><span class="l" style="color:var(--sub);text-align:right">Window mode:</span><div><button type="button" class="pop" data-pop>Use theme default (Stacking)</button></div><span class="l" style="color:var(--sub);text-align:right">Dock position:</span><div><button type="button" class="pop" data-pop>Use theme default (Right)</button></div><span class="l" style="color:var(--sub);text-align:right">Menu style:</span><div><button type="button" class="pop" data-pop>Use theme default (NeXT)</button></div><span class="l" style="color:var(--sub);text-align:right">Minimize windows:</span><div><button type="button" class="pop" data-pop>Use theme default (Into the Dock)</button></div><span class="l" style="color:var(--sub);text-align:right">Dock style:</span><div><button type="button" class="pop" data-pop>Use theme default (Optimized for NeXT)</button></div><span class="l" style="grid-column:1/3;text-align:left;color:var(--txt);font-weight:700">Tiling</span><span class="l" style="color:var(--sub);text-align:right">Layout:</span><div><button type="button" class="pop" data-pop>Dwindle</button></div><span class="l" style="color:var(--sub);text-align:right">Gap between windows:</span><div><button type="button" class="pop" data-pop>Use theme default (8 pixels)</button></div><span class="l" style="color:var(--sub);text-align:right">Gap around windows:</span><div><button type="button" class="pop" data-pop>Use theme default (8 pixels)</button></div><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Border around the active window</button></div><div class="form" data-tab="Dock" hidden><span class="l" style="color:var(--sub);text-align:right">Size:</span><div><input type="range" class="rng" min="0" max="100" value="55" aria-label="Size"><div style="display:flex;justify-content:space-between;color:var(--sub);font-size:11px"><span>Small</span><span>Large</span></div></div><span></span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Magnification:</button><input type="range" class="rng" min="0" max="100" value="30" aria-label="Magnification" style="flex:1;min-width:120px"></div><span class="l" style="color:var(--sub);text-align:right">Dots:</span><div><button type="button" class="pop" data-pop>Under open applications</button></div><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Animate opening applications</button><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Bounce when an application needs attention</button><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Open applications with a single click</button><span class="l" style="grid-column:1/3;text-align:left;color:var(--txt);font-weight:700">Status extras</span><span></span><span style="color:var(--sub)">Show in the Dock or menu bar:</span><span></span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Wi-Fi</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Bluetooth</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Battery</button></div><span></span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Sound</button><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Input source</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Clock</button></div></div><div class="form" data-tab="Background" hidden><span></span><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>Show on every display</button><span></span><div><button type="button" class="btn">Options…</button></div></div>
+      </div>
+    </section>
+
+    <section class="win inactive" id="w3" data-app="Terminal" style="left:3%;top:58%;width:40%;height:36%" aria-label="Terminal window">
+      <div class="tbar"><span class="wb mini" title="Miniaturize"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h6"/></svg></span>Terminal — zsh<span class="wb close" title="Close"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span></div>
+      <div class="wbody"><div class="term">Last login: Thu Nov 26 14:02 on ttyv0<br><span class="p">alice@Raspberry-Pi-500</span> ~ % bectl list<br>BE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Active Mountpoint Space<br>27.0.0-192 NR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1G<br>27.0.0-191 -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;380M<br><span class="p">alice@Raspberry-Pi-500</span> ~ % <span class="cursor"></span></div></div>
+    </section>
+
+    <section class="win inactive" id="w4" data-app="Update" style="left:50%;top:4%;width:38%;height:20%" aria-label="Update window">
+      <div class="tbar"><span class="wb mini" title="Miniaturize"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h6"/></svg></span>Update<span class="wb close" title="Close"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span></div>
+      <div class="wbody"><div class="upd"><svg class="big" viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="12" fill="#26262d" stroke="#55555f" stroke-width="1.5"/><g transform="translate(14 3.5) scale(1.5)" fill="none" stroke="#00d4ff" stroke-width="2.1" stroke-linecap="round"><path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M17.5 3.5v4h-4"/></g><rect x="13" y="40" width="38" height="13" rx="3" fill="none" stroke="#f5f5f7" stroke-width="2.2"/></svg><div><h4>NextBSD 27.0.0-192</h4><p>Up to date.</p><div class="row"><button type="button" class="btn def" id="checkBtn">Check for Updates</button><button type="button" class="btn">Installed Versions…</button></div></div></div></div>
+    </section>
+  </div>
+
+  <h2>Every state</h2>
+  <p class="note">The same controls, side by side in each state. Toggle the theme above and this strip follows it.</p>
+  <div class="ref" id="ref">
+    <div class="cell"><h3>Push buttons</h3><div class="desk refd"><div class="states">
+      <span>Normal</span><div><button type="button" class="btn">Cancel</button></div>
+      <span>Hover</span><div><button type="button" class="btn" style="background:var(--ctlh)">Cancel</button></div>
+      <span>Pressed</span><div><button type="button" class="btn press">Cancel</button></div>
+      <span>Default</span><div><button type="button" class="btn def">Apply</button></div>
+      <span>Disabled</span><div><button type="button" class="btn" disabled>Revert</button></div>
+    </div></div></div>
+    <div class="cell"><h3>Windows</h3><div class="desk refd">
+      <div class="mini-win"><section class="win"><div class="tbar"><span class="wb mini"></span>Active window<span class="wb close"></span></div><div class="wbody" style="padding:10px;gap:8px;flex-direction:row;align-items:center"><button type="button" class="btn">Cancel</button><button type="button" class="btn def">OK</button></div></section></div>
+      <div class="mini-win" style="margin-top:12px"><section class="win inactive"><div class="tbar"><span class="wb mini"></span>Inactive window<span class="wb close"></span></div><div class="wbody" style="padding:10px;gap:8px;flex-direction:row;align-items:center"><button type="button" class="btn">Cancel</button><button type="button" class="btn def">OK</button></div></section></div>
+    </div></div>
+    <div class="cell"><h3>Selection</h3><div class="desk refd">
+      <div class="mini-win" style="height:84px"><section class="win"><div class="tbl"><table><tbody><tr><td><span class="ico f"></span>Active list</td></tr><tr class="sel"><td><span class="ico f"></span>Selected row</td></tr></tbody></table></div></section></div>
+      <div class="mini-win" style="height:84px;margin-top:12px"><section class="win inactive"><div class="tbl"><table><tbody><tr><td><span class="ico f"></span>Inactive list</td></tr><tr class="sel"><td><span class="ico f"></span>Selected row</td></tr></tbody></table></div></section></div>
+    </div></div>
+    <div class="cell"><h3>Choices</h3><div class="desk refd"><div class="states">
+      <span>Checkbox</span><div class="row"><button type="button" class="chk" role="checkbox" aria-checked="false"><span class="b"></span>Off</button><button type="button" class="chk" role="checkbox" aria-checked="true"><span class="b"></span>On</button></div>
+      <span>Radio</span><div class="row"><button type="button" class="chk rad" role="radio" aria-checked="false"><span class="b"></span>Off</button><button type="button" class="chk rad" role="radio" aria-checked="true"><span class="b"></span>On</button></div>
+      <span>Switch</span><div class="row"><button type="button" class="sw" role="switch" aria-checked="false" aria-label="Off"></button><button type="button" class="sw" role="switch" aria-checked="true" aria-label="On"></button></div>
+      <span>Segments</span><div class="seg"><button type="button" aria-pressed="true">One</button><button type="button" aria-pressed="false">Two</button></div>
+    </div></div></div>
+    <div class="cell"><h3>Fields</h3><div class="desk refd"><div class="states">
+      <span>Text</span><label class="fld"><input value="Rewind" aria-label="Text field"></label>
+      <span>Focused</span><label class="fld" style="border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)"><input value="Typing…" aria-label="Focused field"></label>
+      <span>Popup</span><div><button type="button" class="pop">This Folder</button></div>
+      <span>Slider</span><input type="range" class="rng" value="40" style="--v:40%" aria-label="Slider">
+      <span>Progress</span><div class="prog"><i></i></div>
+    </div></div></div>
+  </div>
+
+  <h2>What changes in nextbsd-theme</h2>
+  <p class="note">The colours stay in <code>Tools/make-colors.m</code>, with the same names and a lighter selection (#1b4a63). The bevels and square corners come from GSTheme’s default drawing, so the new look needs <code>NextBSD.m</code> to draw buttons, fields, popups, checkboxes, radios, switches, segments, title bars and scrollers itself: a rounded, filled shape with a 1-point border, the accent on default buttons and checked controls, and the inactive variants (grey selection, neutral default button, dim title) keyed on the window’s key state. The window buttons stay where NextBSD has them: miniaturize on the left, close on the right.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const desk=$("#desk");
+/* folder icons: the theme's cyan folder, with depth and a symbol per kind */
+const GLY={
+  plain:'',
+  downloads:'<path d="M32 27v15M25 36l7 7 7-7M24 47h16" stroke-width="3.2"/>',
+  documents:'<path d="M26 26h9l5 5v16H26z" stroke-width="2.6"/><path d="M35 26v5h5M29 36h8M29 41h8" stroke-width="2.2"/>',
+  desktop:'<rect x="22" y="27" width="20" height="13" rx="2" stroke-width="2.6"/><path d="M28 46h8M32 40v6" stroke-width="2.6"/>',
+  images:'<rect x="22" y="27" width="20" height="17" rx="2" stroke-width="2.6"/><path d="M23 42l6-7 5 5 3-3 5 5" stroke-width="2.4"/><circle cx="37" cy="32" r="1.8" fill="#063a4a" stroke="none"/>',
+  music:'<path d="M29 44V30l11-3v14" stroke-width="2.8"/><circle cx="26.5" cy="44" r="3" fill="#063a4a" stroke="none"/><circle cx="37.5" cy="41" r="3" fill="#063a4a" stroke="none"/>',
+  videos:'<rect x="22" y="28" width="20" height="16" rx="2" stroke-width="2.6"/><path d="M30 32v8l6-4z" fill="#063a4a" stroke="none"/>',
+  public:'<circle cx="28" cy="31" r="3.2" stroke-width="2.4"/><circle cx="37" cy="31" r="3.2" stroke-width="2.4"/><path d="M22 45c0-4 3-7 6-7s6 3 6 7M31 45c0-4 3-7 6-7s6 3 6 7" stroke-width="2.4"/>',
+  applications:'<path d="M32 26l-9 19M32 26l9 19M26 38h12" stroke-width="2.8"/>',
+  home:'<path d="M22 37l10-9 10 9M25 35v10h14V35" stroke-width="2.6"/>'
+};
+function folder(kind,cls){
+  return '<svg class="fic'+(cls?' '+cls:'')+'" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="fb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b8fb0"/><stop offset="1" stop-color="#076b86"/></linearGradient><linearGradient id="ff" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fe3ff"/><stop offset="1" stop-color="#14b5dc"/></linearGradient></defs>'+
+    '<path d="M6 15a4 4 0 0 1 4-4h14l5 5h25a4 4 0 0 1 4 4v29a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z" fill="url(#fb)"/>'+
+    '<path d="M6 23a4 4 0 0 1 4-4h44a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z" fill="url(#ff)"/>'+
+    '<path d="M6 23a4 4 0 0 1 4-4h44a4 4 0 0 1 4 4v1H6z" fill="#b9f3ff" opacity=".55"/>'+
+    '<g fill="none" stroke="#063a4a" stroke-linecap="round" stroke-linejoin="round">'+GLY[kind]+'</g></svg>';
+}
+function fileIcon(){return '<svg class="fic" viewBox="0 0 64 64" aria-hidden="true"><path d="M16 6h22l12 12v40H16z" fill="#eef1f6"/><path d="M38 6v12h12" fill="#c9ced8"/><path d="M22 30h20M22 37h20M22 44h14" stroke="#9aa1ad" stroke-width="2.4" stroke-linecap="round"/></svg>'}
+/* alice's home */
+const files=[["applications","Applications","—","Folder"],["desktop","Desktop","—","Folder"],["documents","Documents","—","Folder"],["downloads","Downloads","—","Folder"],["images","Images","—","Folder"],["music","Music","—","Folder"],["public","Public","—","Folder"],["videos","Videos","—","Folder"],["file","notes.txt","3,072","Plain Text"]];
+function iconFor(f){return f[0]==="file"?fileIcon():folder(f[0])}
+$("#rows").innerHTML=files.map((f,i)=>'<tr data-i="'+i+'"'+(i===3?' class="sel"':'')+'><td>'+iconFor(f)+f[1]+'</td><td class="s">'+f[2]+'</td><td class="s">'+f[3]+'</td></tr>').join("");
+$("#iconv").innerHTML=files.map((f,i)=>'<button type="button" data-i="'+i+'"'+(i===3?' class="sel"':'')+'>'+(f[0]==="file"?fileIcon().replace('class="fic"','class="fic"'):folder(f[0]))+'<span>'+f[1]+'</span></button>').join("");
+$("#side").innerHTML='<b>Local User</b><div class="on">'+folder("home")+'alice</div><b>Favorites</b>'+
+  [["desktop","Desktop"],["documents","Documents"],["downloads","Downloads"],["images","Images"],["music","Music"],["videos","Videos"]].map(x=>'<div>'+folder(x[0])+x[1]+'</div>').join("")+
+  '<b>Domains</b><div>'+folder("plain")+'Local</div><div>'+folder("public")+'Network</div><div>'+folder("applications")+'System</div>';
+$("#fstatus").textContent=files.length+" items • 1 selected • 27.9 GiB available";
+$("#side").addEventListener("click",e=>{const d=e.target.closest("div");if(!d)return;$$("#side div").forEach(x=>x.classList.toggle("on",x===d))});
+$("#iconv").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#iconv button").forEach(x=>x.classList.toggle("sel",x===b))});
+/* focus: one active window */
+let z=10;
+function activate(w){$$("#desk .win").forEach(x=>x.classList.toggle("inactive",x!==w));w.style.zIndex=++z;if(typeof drawMenu==="function")drawMenu(w.dataset.app)}
+$$("#desk .win").forEach(w=>{w.style.zIndex=w.classList.contains("inactive")?5:6;w.addEventListener("pointerdown",()=>activate(w))});
+$$("#desk .tile[data-open]").forEach(t=>t.addEventListener("click",()=>{const w=t.dataset.open&&document.getElementById(t.dataset.open);if(w){w.style.opacity=1;w.style.transform="none";activate(w)}}));
+/* The apps' own menus, as their sources build them (apps-workspace
+   FVApplication.m, apps-terminal AppController.m, apps-update). */
+const K=(t,k)=>[t,k||""];
+const MENUS={
+ Workspace:{top:[K("About Workspace"),K("Preferences…","⌘,"),"File","Edit","View","Go","Window","Help",K("Quit","⌘Q")],
+  subs:{File:[K("New Window","⌘N"),K("Open","⌘O"),K("Open With…"),K("Open Folder in New Window"),K("Show Package Contents"),K("New Folder"),K("Rename"),K("Delete Permanently…"),K("Get Info","⌘I"),K("Add to Favorites","⌃⌘T"),K("Add to Dock"),K("Close","⌘W")],
+   Edit:[K("Undo Last Safe Operation","⌘Z"),K("Cut","⌘X"),K("Copy","⌘C"),K("Paste","⌘V"),K("Select All","⌘A"),K("Copy Path"),K("Duplicate","⌘D"),K("Move To…"),K("Move to Trash"),K("Delete Permanently…"),K("Cancel Work","⌘.")],
+   View:[K("List","⌘1"),K("Columns","⌘2"),K("Icons","⌘3"),K("Larger Icons","⌘+"),K("Smaller Icons","⌘-"),K("Show Hidden Files","⌘H"),K("Folders First"),K("Refresh","⌘R"),K("Search","⌘F")],
+   Go:[K("Back","⌘["),K("Forward","⌘]"),K("Parent Folder","⌘U"),K("Home"),K("Go to Folder…","⌘G")],
+   Window:[K("Minimize","⌘M")],Help:[K("Workspace Help","⌘?")]}},
+ Terminal:{top:[K("About Terminal"),K("Preferences…","⌘,"),"Session","Edit","Window",K("Terminal Help","⌘?"),K("Hide Terminal","⌘H"),K("Quit","⌘Q")],
+  subs:{Session:[K("New Terminal","⌘N"),K("New Terminal in Directory…","⌘O"),K("Close Terminal","⌘T"),K("Restart Shell"),K("Close Session","⌘W")],
+   Edit:[K("Copy","⌘C"),K("Paste","⌘V"),K("Select All","⌘A")],Window:[K("Minimize","⌘M")]}},
+ Update:{top:[K("About Update"),K("Check for Updates"),K("Installed Versions…"),K("Close","⌘W"),K("Hide","⌘H"),K("Quit","⌘Q")],subs:{}}
+};
+let sub=null,menuApp="Workspace";
+function closeSub(){if(sub){sub.remove();sub=null;$$("#amenu button.open").forEach(b=>b.classList.remove("open"))}}
+function drawMenu(app){
+  menuApp=app;closeSub();
+  const m=MENUS[app];
+  $("#amenu").innerHTML='<div class="t" id="appname">'+app+'</div>'+m.top.map(it=>typeof it==="string"
+    ?'<button type="button" data-m="'+it+'">'+it+' <span class="arr">›</span></button>'
+    :'<button type="button" data-cmd="'+it[0]+'">'+it[0]+(it[1]?' <kbd>'+it[1]+'</kbd>':'')+'</button>').join("");
+}
+drawMenu("Workspace");
+$("#amenu").addEventListener("click",e=>{
+  const c=e.target.closest("button[data-cmd]");
+  if(c){closeSub();if(c.dataset.cmd==="Preferences…"&&menuApp==="Workspace"){const w=$("#w2");w.style.opacity=1;w.style.transform="none";activate(w)}return}
+  const b=e.target.closest("button[data-m]");if(!b)return;
+  e.stopPropagation();
+  if(b.classList.contains("open")){closeSub();return}
+  closeSub();b.classList.add("open");
+  const dr=desk.getBoundingClientRect(),br=b.getBoundingClientRect(),mr=$("#amenu").getBoundingClientRect();
+  sub=document.createElement("div");sub.className="sub";sub.setAttribute("role","menu");
+  MENUS[menuApp].subs[b.dataset.m].forEach(t=>{const i=document.createElement("button");i.type="button";i.innerHTML=t[0]+(t[1]?'<kbd>'+t[1]+'</kbd>':'');i.onclick=closeSub;sub.appendChild(i)});
+  sub.style.left=(mr.right-dr.left+4)+"px";sub.style.top=(br.top-dr.top-4)+"px";desk.appendChild(sub);
+});
+document.addEventListener("click",e=>{if(sub&&!e.target.closest(".sub,#amenu"))closeSub()});
+/* Preferences tabs and style presets */
+$("#ptabs").addEventListener("click",e=>{const t=e.target.closest("[data-t]");if(!t)return;$$("#ptabs [data-t]").forEach(x=>x.setAttribute("aria-selected",x===t));$$("#w2 .form").forEach(f=>f.hidden=f.dataset.tab!==t.dataset.t)});
+$("#w2").addEventListener("click",e=>{const p=e.target.closest(".preset");if(!p)return;$$("#w2 .preset").forEach(x=>{x.classList.toggle("on",x===p);x.setAttribute("aria-pressed",x===p)})});
+/* drag by the title bar */
+$$("#desk .tbar").forEach(t=>{
+  t.addEventListener("pointerdown",e=>{
+    if(e.target.closest(".wb"))return;
+    const w=t.closest(".win"),dr=desk.getBoundingClientRect(),r=w.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;
+    t.setPointerCapture(e.pointerId);t.style.cursor="grabbing";
+    const mv=ev=>{w.style.left=Math.max(-r.width+60,Math.min(dr.width-60,ev.clientX-dr.left-ox))+"px";w.style.top=Math.max(24,Math.min(dr.height-28,ev.clientY-dr.top-oy))+"px"};
+    const up=()=>{t.removeEventListener("pointermove",mv);t.removeEventListener("pointerup",up);t.style.cursor=""};
+    t.addEventListener("pointermove",mv);t.addEventListener("pointerup",up);
+  });
+});
+/* window buttons: close hides, miniaturize shrinks; both come back after a moment */
+desk.addEventListener("click",e=>{
+  const b=e.target.closest(".wb");if(!b)return;
+  const w=b.closest(".win");if(!desk.contains(w)||w.closest(".refd"))return;
+  w.style.transition="opacity .2s, transform .2s";w.style.opacity=0;w.style.transform=b.classList.contains("mini")?"scale(.2) translate(300%,-200%)":"scale(.96)";
+  setTimeout(()=>{w.style.opacity=1;w.style.transform="none"},1100);
+});
+/* table selection */
+$("#rows").addEventListener("click",e=>{const r=e.target.closest("tr");if(!r)return;$$("#rows tr").forEach(x=>x.classList.toggle("sel",x===r));$("#fstatus").textContent=files.length+" items • 1 selected • 27.9 GiB available"});
+/* toolbar view modes */
+$$("[data-vm]").forEach(b=>b.addEventListener("click",()=>{$$("[data-vm]").forEach(x=>x.classList.toggle("on",x===b));const icons=b.title==="Icons";$("#iconv").hidden=!icons;$("#listv").hidden=icons}));
+/* checkboxes, radios, switches, segments, tabs */
+document.addEventListener("click",e=>{
+  const c=e.target.closest(".chk,.sw");
+  if(c){
+    if(c.getAttribute("role")==="radio"){c.parentElement.querySelectorAll('[role="radio"]').forEach(x=>x.setAttribute("aria-checked",x===c))}
+    else c.setAttribute("aria-checked",c.getAttribute("aria-checked")!=="true");
+    return;
+  }
+  const s=e.target.closest(".seg button");
+  if(s){s.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===s));return}
+  const t=e.target.closest(".tabs button");
+  if(t){t.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected",x===t));return}
+});
+/* slider fill */
+$$(".rng").forEach(r=>{const f=()=>r.style.setProperty("--v",r.value+"%");r.addEventListener("input",f);f()});
+/* popup menus: each shows its own choices */
+let menu=null;
+function closeMenu(){if(menu){menu.remove();menu=null}}
+const CHOICES={"Window mode:":["Use theme default (Stacking)","Stacking","Tiling"],"Dock position:":["Use theme default (Right)","Right","Left","Top","Bottom"],"Menu style:":["Use theme default (NeXT)","NeXT","In-window","Mac menu bar"],"Minimize windows:":["Use theme default (Into the Dock)","NeXT miniwindows","WindowServer previews","Into the Dock"],"Dock style:":["Use theme default (Optimized for NeXT)","Optimized for NeXT","Optimized for Mac","Optimized for Tiling"],"Layout:":["Dwindle","Master and stack"],"Gap between windows:":["Use theme default (8 pixels)","None","4 pixels","8 pixels","12 pixels","16 pixels"],"Gap around windows:":["Use theme default (8 pixels)","None","4 pixels","8 pixels","12 pixels","16 pixels"],"Dots:":["Under open applications","Under applications not open"]};
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-pop]");
+  if(!b){if(menu&&!e.target.closest(".menu"))closeMenu();return}
+  e.stopPropagation();if(menu){closeMenu();return}
+  const w=b.closest(".win"),wr=w.getBoundingClientRect(),br=b.getBoundingClientRect();
+  const label=b.parentElement.previousElementSibling?b.parentElement.previousElementSibling.textContent:"";
+  menu=document.createElement("div");menu.className="menu";menu.setAttribute("role","menu");
+  (CHOICES[label]||[b.textContent]).forEach(o=>{const i=document.createElement("button");i.type="button";i.textContent=o;i.setAttribute("role","menuitem");i.onclick=()=>{b.textContent=o;closeMenu()};menu.appendChild(i)});
+  menu.style.left=(br.left-wr.left)+"px";menu.style.top=(br.bottom-wr.top+2)+"px";w.appendChild(menu);menu.querySelector("button").focus();
+});
+/* theme and accent pickers */
+$("#themePick").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#themePick button").forEach(x=>x.setAttribute("aria-pressed",x===b));$$(".desk").forEach(d=>d.classList.toggle("cur",b.dataset.t==="cur"))});
+$("#accPick").addEventListener("click",e=>{const b=e.target.closest(".sw8");if(!b)return;$$("#accPick .sw8").forEach(x=>x.setAttribute("aria-pressed",x===b));$$(".desk").forEach(d=>{d.style.setProperty("--acc",b.dataset.a);d.style.setProperty("--acct",b.dataset.t)})});
+})();
+</script>
