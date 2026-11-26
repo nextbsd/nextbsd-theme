@@ -29,6 +29,8 @@ static BOOL fitMiniwindowIcons = NO;
 /* The Mac menu bar's opacity: see-through as macOS's, a little less,
    since nothing blurs what's behind it. */
 static const CGFloat NBMenuBarOpacity = 0.8;
+/* A NeXT menu's panel: frosted, over WindowServer's blur. */
+static const CGFloat NBMenuOpacity = 0.82;
 
 static NSImage *
 NBFittedMiniwindowImage(NSView *view, NSImage *image)
@@ -121,6 +123,11 @@ static unsigned NBControl, NBControlPressed, NBControlBorder, NBField, NBFieldBo
 static unsigned NBAccent, NBAccentText, NBTitle, NBTitleInactive, NBTitleText;
 static unsigned NBTitleTextInactive, NBSeparator, NBWindowBorder, NBWindowBorderInactive;
 static unsigned NBPlane, NBKnob, NBKnobPressed, NBHeaderPressed, NBHeaderText;
+static unsigned NBMenu;
+/* The lit controls: face top and bottom, pressed, rim, and how strong the
+   top highlight and the shadow under them are. */
+static unsigned NBLitTop, NBLitBottom, NBLitPressedTop, NBLitPressedBottom, NBLitRim;
+static CGFloat NBLitHighlight, NBLitShadow;
 
 static void
 NBApplyPalette(void)
@@ -134,6 +141,10 @@ NBApplyPalette(void)
       NBWindowBorder = 0x333845; NBWindowBorderInactive = 0x262a32;
       NBPlane = 0x15171c; NBKnob = 0x3a3f4b; NBKnobPressed = 0x555b68;
       NBHeaderPressed = 0x1d2027; NBHeaderText = 0x9a9daa;
+      NBMenu = 0x1a1d24;
+      NBLitTop = 0x454a55; NBLitBottom = 0x32363e;
+      NBLitPressedTop = 0x24272d; NBLitPressedBottom = 0x2e3239; NBLitRim = 0x0b0c0f;
+      NBLitHighlight = 0.16; NBLitShadow = 0.35;
     }
   else
     {
@@ -144,6 +155,10 @@ NBApplyPalette(void)
       NBWindowBorder = 0xb4b8c1; NBWindowBorderInactive = 0xcdd0d6;
       NBPlane = 0xf4f4f6; NBKnob = 0xc3c6ce; NBKnobPressed = 0xa5a9b2;
       NBHeaderPressed = 0xe6e7eb; NBHeaderText = 0x6b6f7a;
+      NBMenu = 0xffffff;
+      NBLitTop = 0xffffff; NBLitBottom = 0xeceef2;
+      NBLitPressedTop = 0xcfd3da; NBLitPressedBottom = 0xdee1e6; NBLitRim = 0xb3b7bf;
+      NBLitHighlight = 0.9; NBLitShadow = 0.08;
     }
 }
 
@@ -191,6 +206,59 @@ NBRoundRect(NSRect r, CGFloat radius, NSColor *fill, NSColor *stroke)
   if (stroke != nil)
     {
       [stroke set];
+      [path setLineWidth: 1.0];
+      [path stroke];
+    }
+}
+
+/*
+ * A control lit from above (nextbsd/nextbsd#708, the controls mockup): a
+ * soft gradient from top to bottom, a crisp rim, a one-pixel highlight
+ * just inside its top edge and a little shadow under it, so it stands
+ * off the window rather than being printed on it. view says which way
+ * is up (a flipped view's y grows down).
+ */
+static void
+NBLitRect(NSRect r, CGFloat radius, NSColor *top, NSColor *bottom,
+          NSColor *rim, CGFloat highlight, CGFloat shadow, NSView *view)
+{
+  BOOL flipped = [view isFlipped];
+  NSRect face = NSInsetRect(r, 0.5, 0.5);
+  NSBezierPath *path;
+  NSGradient *gradient;
+
+  /* Room for the shadow below. */
+  face.size.height -= 1.0;
+  if (flipped == NO)
+    face.origin.y += 1.0;
+  if (NSWidth(face) < 2.0 || NSHeight(face) < 2.0)
+    return;
+  radius = MIN(radius, MIN(NSWidth(face), NSHeight(face)) / 2.0);
+
+  if (shadow > 0)
+    {
+      NSRect under = NSOffsetRect(face, 0, flipped ? 1.0 : -1.0);
+      [[NSColor colorWithCalibratedWhite: 0 alpha: shadow] set];
+      [[NSBezierPath bezierPathWithRoundedRect: under
+                                       xRadius: radius yRadius: radius] fill];
+    }
+  path = [NSBezierPath bezierPathWithRoundedRect: face
+                                         xRadius: radius yRadius: radius];
+  gradient = [[NSGradient alloc] initWithStartingColor: flipped ? top : bottom
+                                           endingColor: flipped ? bottom : top];
+  [gradient drawInBezierPath: path angle: 90];
+  RELEASE(gradient);
+  if (highlight > 0)
+    {
+      CGFloat y = flipped ? NSMinY(face) + 1.0 : NSMaxY(face) - 1.0;
+      [[NSColor colorWithCalibratedWhite: 1 alpha: highlight] set];
+      NSRectFillUsingOperation(NSMakeRect(NSMinX(face) + radius * 0.6, y,
+                                          NSWidth(face) - radius * 1.2, 1.0),
+                               NSCompositeSourceOver);
+    }
+  if (rim != nil)
+    {
+      [rim set];
       [path setLineWidth: 1.0];
       [path stroke];
     }
@@ -315,12 +383,17 @@ static char NBTrackKey;
     return;
   objc_setAssociatedObject(self, &NBHoverKey,
     hover ? [NSNumber numberWithBool: YES] : nil, OBJC_ASSOCIATION_RETAIN);
+  /* Leaving a window (it closes, its views go one by one): nothing to
+     redraw, and the others may already be out of it, where a redraw
+     would mix two windows' views. */
+  if ([self window] == nil || [[self superview] window] != [self window])
+    return;
   /* The traffic lights show their symbols together, as on a Mac. */
   {
     NSEnumerator *e = [[[self superview] subviews] objectEnumerator];
     NSView *v;
     while ((v = [e nextObject]) != nil)
-      if ([v isKindOfClass: [NBTitleButton class]])
+      if ([v isKindOfClass: [NBTitleButton class]] && [v window] == [self window])
         [v setNeedsDisplay: YES];
   }
   [self setNeedsDisplay: YES];
@@ -411,7 +484,8 @@ static char NBTrackKey;
 - (void) viewWillMoveToWindow: (NSWindow *)window
 {
   [self nbUntrack];
-  [self nbSetHover: NO];
+  /* Forget the pointer without drawing: the window is going. */
+  objc_setAssociatedObject(self, &NBHoverKey, nil, OBJC_ASSOCIATION_RETAIN);
   [super viewWillMoveToWindow: window];
 }
 
@@ -537,6 +611,71 @@ static char NBTrackKey;
   [glyph stroke];
 }
 
+/* NeXT: miniaturize at the left, close at the right, each a small lit
+   button with its symbol, in colour (close red, miniaturize amber, the
+   symbol a darker shade of it): bright on the active window, dimmed
+   toward the title bar on an inactive one, which the pointer brightens.
+   A close button whose window has unsaved changes shows a dot. */
+- (void) nbDrawNeXT
+{
+  NSWindow *w = [self window];
+  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  NSInteger kind = [self tag];
+  BOOL pressed = [[self cell] isHighlighted], hover = [self nbHover];
+  NSRect b = NSInsetRect([self bounds], 0.5, 0.5);
+  CGFloat side = MIN(MIN(NSWidth(b), NSHeight(b)), 17.0);
+  NSRect face = NSMakeRect(floor(NSMidX(b) - side / 2), floor(NSMidY(b) - side / 2),
+                           side, side);
+  CGFloat cx = floor(NSMidX(face)) + 0.5, cy = floor(NSMidY(face)) + 0.5;
+  NSBezierPath *glyph = [NSBezierPath bezierPath];
+  BOOL close = kind == NSWindowCloseButton;
+
+  {
+    BOOL lit = active || hover;
+    NSColor *base = NBHex(close ? 0xff5f57 : 0xfebc2e);
+    NSColor *bar = NBHex(NBTitleInactive);
+    NSColor *top, *bottom, *rim, *inkColor;
+
+    if (!lit)
+      base = [base blendedColorWithFraction: 0.6 ofColor: bar];
+    top = [base highlightWithLevel: hover ? 0.3 : 0.18];
+    bottom = [base shadowWithLevel: 0.12];
+    rim = [base shadowWithLevel: lit ? 0.45 : 0.3];
+    if (pressed)
+      {
+        top = [base shadowWithLevel: 0.18];
+        bottom = [base shadowWithLevel: 0.25];
+      }
+    NBLitRect(face, 4, top, bottom, rim, pressed || !lit ? 0.1 : 0.45,
+              lit ? NBLitShadow * 0.6 : 0, self);
+    inkColor = NBHex(close ? 0x5c0a05 : 0x5a3d00);
+    if (!lit)
+      inkColor = [inkColor blendedColorWithFraction: 0.45 ofColor: base];
+    if (kind == NSWindowCloseButton && [w isDocumentEdited])
+      {
+        [inkColor set];
+        [[NSBezierPath bezierPathWithOvalInRect:
+           NSMakeRect(cx - 3, cy - 3, 6, 6)] fill];
+        return;
+      }
+    [glyph setLineWidth: 1.4];
+    [glyph setLineCapStyle: NSRoundLineCapStyle];
+    if (close)
+      {
+        [glyph moveToPoint: NSMakePoint(cx - 3.5, cy - 3.5)];
+        [glyph lineToPoint: NSMakePoint(cx + 3.5, cy + 3.5)];
+        [glyph moveToPoint: NSMakePoint(cx - 3.5, cy + 3.5)];
+        [glyph lineToPoint: NSMakePoint(cx + 3.5, cy - 3.5)];
+      }
+    else
+      /* NeXT's miniaturize: a small window. */
+      [glyph appendBezierPathWithRect: NSMakeRect(cx - 3.5, cy - 3.5, 7, 7)];
+    [inkColor set];
+    [glyph stroke];
+    return;
+  }
+}
+
 - (void) mouseEntered: (NSEvent *)event
 {
   [self nbSetHover: YES];
@@ -560,6 +699,11 @@ static char NBTrackKey;
   if ([nbWindowStyle isEqual: @"tiling"])
     {
       [self nbDrawTiling];
+      return;
+    }
+  if ([self tag] == NSWindowCloseButton || [self tag] == NSWindowMiniaturizeButton)
+    {
+      [self nbDrawNeXT];
       return;
     }
   if (![self nbHover] || ![self isEnabled] || hover == nil)
@@ -674,6 +818,12 @@ static NSDictionary *lightInfo = nil;
 
 - (NSColor *) colorNamed: (NSString *)name state: (GSThemeControlState)state
 {
+  /* A NeXT menu's title row (GSTitleView): the title in the title colour
+     on the menu's own colour, so it reads in Light too (white by default). */
+  if ([name isEqual: @"GSMenuBarTitle"])
+    return NBHex(NBTitleText);
+  if ([name isEqual: @"GSMenuBar"])
+    return [NBHex(NBMenu) colorWithAlphaComponent: NBMenuOpacity];
   if (nbLight && [name isEqual: @"highlightedTableRowBackgroundColor"])
     return NBHex(0xb6e3f2);
   if (nbLight && [name isEqual: @"highlightedTableRowTextColor"])
@@ -773,6 +923,31 @@ static NSDictionary *lightInfo = nil;
                          dirtyRect: (NSRect)dirtyRect
                         horizontal: (BOOL)horizontal
 {
+  if (!horizontal && [self tilesNamed: GSMenuVerticalBackground
+                                state: GSThemeNormalState] == nil)
+    {
+      /* NeXT menus, submenus and pop-up lists, as in the design: one
+         rounded panel with a thin border, see-through outside its
+         corners (the window is made non-opaque and its corners cleared,
+         as for title bars), the title row and the items drawn on it. */
+      NSWindow *w = [menuView window];
+      NSBezierPath *panel = [NSBezierPath
+        bezierPathWithRoundedRect: NSInsetRect(bounds, 0.5, 0.5)
+                          xRadius: 7 yRadius: 7];
+
+      if ([w isOpaque])
+        [w setOpaque: NO];
+      NSRectFillUsingOperation(NSIntersectionRect(bounds, dirtyRect),
+                               NSCompositeClear);
+      /* Frosted: a little see-through, WindowServer blurring what is
+         under it, as a Mac's menus are. */
+      [[NBHex(NBMenu) colorWithAlphaComponent: NBMenuOpacity] set];
+      [panel fill];
+      [NBHex(NBControlBorder) set];
+      [panel setLineWidth: 1];
+      [panel stroke];
+      return;
+    }
   if (!horizontal || [self tilesNamed: GSMenuHorizontalBackground
                                 state: GSThemeNormalState] != nil)
     {
@@ -782,12 +957,22 @@ static NSDictionary *lightInfo = nil;
                             horizontal: horizontal];
       return;
     }
-  /* The Mac menu bar along the top of the screen (an app's bar, or a
-     status item, in a window of its own at menu bar level or above) is
-     see-through with no line along the bottom, as on macOS: the same
-     alpha in every bar and status item, so the strip reads as one. A
-     menu bar in a window (inwindow) stays solid, with its line. */
-  if ([[menuView window] level] >= NSMainMenuWindowLevel)
+  /* The Mac menu bar along the top of the screen (an app's bar, in a
+     window of its own at menu bar level) is see-through with no line
+     along the bottom, as on macOS. A status item (the clock, Bluetooth,
+     in a window above the bar's level) draws no background: the app's
+     bar runs the whole width under it (or WindowServer's, when the app
+     has none), and a second layer of the same colour made the items a
+     lighter block. A menu bar in a window (inwindow) stays solid, with
+     its line. */
+  if ([[menuView window] level] > NSMainMenuWindowLevel)
+    {
+      [[menuView window] setOpaque: NO];
+      NSRectFillUsingOperation(NSIntersectionRect(bounds, dirtyRect),
+                               NSCompositeClear);
+      return;
+    }
+  if ([[menuView window] level] == NSMainMenuWindowLevel)
     {
       [[menuView window] setOpaque: NO];
       [[[self menuBarBackgroundColor]
@@ -871,23 +1056,38 @@ static NSDictionary *lightInfo = nil;
   if (NBIsDefaultButton(cell) && [cell isKindOfClass: [NSButtonCell class]]
       && ![cell isKindOfClass: [NSPopUpButtonCell class]])
     {
+      /* Glass in the accent: lighter at the top, a bright highlight, a
+         rim a shade darker. */
       NSColor *accent = NBHex(NBAccent);
+      NSColor *top = [accent highlightWithLevel: 0.35];
+      NSColor *bottom = [accent shadowWithLevel: 0.12];
       if (pressed)
-        accent = [accent shadowWithLevel: 0.15];
-      NBRoundRect(frame, NBRadius, accent, accent);
+        {
+          top = [accent shadowWithLevel: 0.1];
+          bottom = [accent shadowWithLevel: 0.2];
+        }
+      NBLitRect(frame, NBRadius + 1, top, bottom, [accent shadowWithLevel: 0.4],
+                pressed ? 0.15 : 0.45, nbLight ? 0.18 : 0.45, view);
       return;
     }
   if (state == GSThemeSelectedState
-      || state == GSThemeSelectedFirstResponderState)
+      || state == GSThemeSelectedFirstResponderState || pressed)
     {
-      /* An on/off button that is on (a toolbar's view buttons). */
-      NBRoundRect(frame, NBRadius, [NSColor selectedControlColor],
-                  NBHex(NBControlBorder));
+      /* Pressed, or an on/off button that is on (a toolbar's view
+         buttons): pushed in, darker, no highlight. */
+      NBLitRect(frame, NBRadius + 1, NBHex(NBLitPressedTop), NBHex(NBLitPressedBottom),
+                NBHex(NBLitRim), 0, NBLitShadow * 0.5, view);
       return;
     }
-  NBRoundRect(frame, NBRadius,
-              NBHex(pressed ? NBControlPressed : NBControl),
-              NBHex(NBControlBorder));
+  if ([cell respondsToSelector: @selector(isEnabled)] && ![cell isEnabled])
+    {
+      /* Disabled: flat and quiet, no light on it. */
+      NBLitRect(frame, NBRadius + 1, NBHex(NBLitBottom), NBHex(NBLitBottom),
+                [NBHex(NBLitRim) colorWithAlphaComponent: 0.6], 0, 0, view);
+      return;
+    }
+  NBLitRect(frame, NBRadius + 1, NBHex(NBLitTop), NBHex(NBLitBottom),
+            NBHex(NBLitRim), NBLitHighlight, NBLitShadow, view);
 }
 
 /* The default button shows by its colour, as on macOS, not by GNUstep's
@@ -1309,6 +1509,74 @@ NBRingForControl(NSView *view)
       [item drawLabel: truncate inRect: r];
       x += s.width;
     }
+}
+
+/* Menu items: the menu's colour, no bevel between them, a rounded
+   highlight inset from the panel's edge. */
+- (NSColor *) menuBackgroundColor
+{
+  return NBHex(NBMenu);
+}
+
+- (NSColor *) menuItemBackgroundColor
+{
+  return NBHex(NBMenu);
+}
+
+/* A menu item draws only its highlight: the rest is the panel's or the
+   menu bar's, which are drawn already (an item filling its own frame
+   would put solid blocks on the see-through bar). */
+- (void) drawBorderAndBackgroundForMenuItemCell: (NSMenuItemCell *)cell
+                                      withFrame: (NSRect)cellFrame
+                                         inView: (NSView *)controlView
+                                          state: (GSThemeControlState)state
+                                   isHorizontal: (BOOL)isHorizontal
+{
+  if (state != GSThemeHighlightedState && state != GSThemeSelectedState
+      && [self tilesNamed: (isHorizontal ? GSMenuHorizontalItem : GSMenuVerticalItem)
+                    state: state] == nil)
+    return;
+  [super drawBorderAndBackgroundForMenuItemCell: cell
+                                      withFrame: cellFrame
+                                         inView: controlView
+                                          state: state
+                                   isHorizontal: isHorizontal];
+}
+
+- (NSColor *) menuBorderColor
+{
+  return NBHex(NBControlBorder);
+}
+
+- (BOOL) drawsBorderForMenuItemCell: (NSMenuItemCell *)cell
+                              state: (GSThemeControlState)state
+                       isHorizontal: (BOOL)horizontal
+{
+  return NO;
+}
+
+- (CGFloat) menuItemBackgroundRadius
+{
+  return 4.0;
+}
+
+- (NSEdgeInsets) menuItemAreaInsets
+{
+  return NSEdgeInsetsMake(4.0, 4.0, 4.0, 4.0);
+}
+
+/* The title row of a NeXT menu: on the panel, with a hairline under it,
+   not GSTheme's black bar. GNUstep draws the title in the rect returned. */
+- (NSRect) drawMenuTitleBackground: (GSTitleView *)aTitleView
+                        withBounds: (NSRect)bounds
+                          withClip: (NSRect)clipRect
+{
+  if ([self tilesNamed: GSMenuTitleBackground state: GSThemeNormalState] != nil)
+    return [super drawMenuTitleBackground: aTitleView withBounds: bounds
+                                 withClip: clipRect];
+  [NBHex(NBSeparator) set];
+  NSRectFill(NSMakeRect(NSMinX(bounds) + 6, NSMinY(bounds), NSWidth(bounds) - 12, 1));
+  return NSInsetRect(bounds, 4, 0);
 }
 
 /* GNUstep hardcodes a light gray resize bar when a theme has no tiles for it. */

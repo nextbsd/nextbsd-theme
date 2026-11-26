@@ -32,5 +32,10 @@
     NSUserFixedPitchFont = "JetBrainsMono-Regular";
     GSScrollerDefaultWidth = 14;
     GSScrollerArrowsSameEnd = YES;
+    /* Menu shortcuts in the Mac's symbols rather than GNUstep's # ^ + /. */
+    GSCommandKeyString = "\U2318";
+    GSControlKeyString = "\U2303";
+    GSAlternateKeyString = "\U2325";
+    GSShiftKeyString = "\U21E7";
   };
 }
