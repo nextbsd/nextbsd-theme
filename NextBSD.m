@@ -288,6 +288,67 @@ static char NBTrackKey;
 
 @end
 
+/*
+ * The scroller style changes at once in running apps. Workspace writes
+ * GNUstep's keys (NSScrollViewInterfaceStyle, GSScrollerArrowsSameEnd)
+ * and posts org.nextbsd.DesktopSettingsChanged with key NBScrollerStyle;
+ * every app with this theme then re-reads its defaults, which empties
+ * GNUstep's interface style cache, and lays out its scroll views again.
+ */
+@interface NBScrollerStyleObserver : NSObject
++ (void) install;
+@end
+
+@implementation NBScrollerStyleObserver
+
+static void
+NBRetile(NSView *view)
+{
+  NSEnumerator *e;
+  NSView *sub;
+
+  if ([view isKindOfClass: [NSScrollView class]])
+    {
+      [(NSScrollView *)view tile];
+      [view setNeedsDisplay: YES];
+    }
+  e = [[view subviews] objectEnumerator];
+  while ((sub = [e nextObject]) != nil)
+    NBRetile(sub);
+}
+
++ (void) install
+{
+  static BOOL installed = NO;
+
+  if (installed)
+    return;
+  installed = YES;
+  [[NSDistributedNotificationCenter defaultCenter]
+    addObserver: self
+       selector: @selector(desktopSettingsChanged:)
+           name: @"org.nextbsd.DesktopSettingsChanged"
+         object: nil];
+}
+
++ (void) desktopSettingsChanged: (NSNotification *)note
+{
+  NSEnumerator *e;
+  NSWindow *w;
+
+  if (![[[note userInfo] objectForKey: @"key"]
+         isEqual: @"NBScrollerStyle"])
+    return;
+  [[NSUserDefaults standardUserDefaults] synchronize];
+  e = [[NSApp windows] objectEnumerator];
+  while ((w = [e nextObject]) != nil)
+    if ([w contentView] != nil)
+      NBRetile([[w contentView] superview] ? [[w contentView] superview]
+                                           : [w contentView]);
+}
+
+@end
+
 @implementation NextBSD
 
 - (void) activate
@@ -297,6 +358,7 @@ static char NBTrackKey;
   fitMiniwindowIcons = (miniWindowSetImage != NULL);
   NBInstallDefaultButtonTitle();
   darkDefaultTitle = (buttonTextColor != NULL);
+  [NBScrollerStyleObserver install];
 }
 
 - (void) deactivate
