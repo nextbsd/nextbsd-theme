@@ -846,6 +846,14 @@ NBRetile(NSView *view)
 
 static NSDictionary *lightInfo = nil;
 
+/* No app icon at the start of the menus (the app's own item is its name
+   alone); NBMenuShowsAppIcon brings it back. */
+- (BOOL) menuShouldShowIcon
+{
+  return [[NSUserDefaults standardUserDefaults]
+           boolForKey: @"NBMenuShowsAppIcon"];
+}
+
 /* Light: the light colour list (ThemeColorsLight.clr, Tools/make-colors). */
 - (NSColorList *) colors
 {
