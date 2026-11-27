@@ -3,6 +3,10 @@
 #import <GNUstepGUI/GSTheme.h>
 #import <objc/runtime.h>
 #include <math.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 @interface NextBSD : GSTheme
 @end
@@ -879,9 +883,176 @@ NBRedrawMenuViews(NSView *view)
 
 @end
 
+/*
+ * The NextBSD menu: the first menu of the Mac style's menu bar, in every
+ * app, where macOS has the Apple menu, with Log Out, Restart and Shut
+ * Down. Each asks first, then loginwindow does it through its control
+ * socket (apps-loginwindow), which obeys only the session's user.
+ */
+@interface NBSystemMenu : NSObject
++ (NBSystemMenu *) shared;
++ (NSMenuItem *) item;
++ (NSArray *) sessionItems;
+@end
+
+/* The NextBSD item's represented object, to find it again. */
+static NSString *const NBSystemMenuTag = @"org.nextbsd.SystemMenu";
+
+@implementation NBSystemMenu
+
++ (NBSystemMenu *) shared
+{
+  static NBSystemMenu *shared = nil;
+
+  if (shared == nil)
+    shared = [NBSystemMenu new];
+  return shared;
+}
+
++ (NSMenuItem *) item
+{
+  NSMenu *menu = AUTORELEASE([[NSMenu alloc] initWithTitle: @"NextBSD"]);
+  NSMenuItem *item = AUTORELEASE([[NSMenuItem alloc]
+                                   initWithTitle: @"NextBSD"
+                                          action: NULL
+                                   keyEquivalent: @""]);
+  NSString *path = [[NSBundle bundleForClass: self]
+                     pathForResource: @"NextBSDMenu" ofType: @"png"
+                         inDirectory: @"ThemeImages"];
+  NSImage *cube = path ? AUTORELEASE([[NSImage alloc]
+                                       initWithContentsOfFile: path]) : nil;
+  NSString *name = [NSFullUserName() length] ? NSFullUserName()
+                                             : NSUserName();
+
+  [[menu addItemWithTitle: [NSString stringWithFormat: @"Log Out %@…", name]
+                   action: @selector(logOut:)
+            keyEquivalent: @""] setTarget: [self shared]];
+  [[menu addItemWithTitle: @"Restart…" action: @selector(restart:)
+            keyEquivalent: @""] setTarget: [self shared]];
+  [[menu addItemWithTitle: @"Shut Down…" action: @selector(shutDown:)
+            keyEquivalent: @""] setTarget: [self shared]];
+  /* The cube, as the Apple menu shows the apple. */
+  if (cube != nil)
+    {
+      CGFloat side = [NSMenuView menuBarHeight] - 8;
+
+      [cube setScalesWhenResized: YES];
+      [cube setSize: NSMakeSize(side, side)];
+      [item setImage: cube];
+      [item setTitle: @""];
+    }
+  [item setRepresentedObject: NBSystemMenuTag];
+  [item setSubmenu: menu];
+  return item;
+}
+
+/* Log Out (Command-Q, as NeXTSTEP's Workspace had it), Restart and Shut
+   Down, for Workspace's own menu in the NeXT style. */
++ (NSArray *) sessionItems
+{
+  NSMenu *m = [[self item] submenu];
+  NSMutableArray *items = [NSMutableArray array];
+
+  while ([m numberOfItems] > 0)
+    {
+      NSMenuItem *it = RETAIN([m itemAtIndex: 0]);
+
+      [m removeItemAtIndex: 0];
+      [it setRepresentedObject: NBSystemMenuTag];
+      [items addObject: it];
+      RELEASE(it);
+    }
+  [[items objectAtIndex: 0] setKeyEquivalent: @"q"];
+  return items;
+}
+
+/* loginwindow's answer, ok or denied. */
+static BOOL
+NBAskLoginWindow(const char *what)
+{
+  struct sockaddr_un sun;
+  char answer[16] = "", line[32];
+  int s = socket(AF_UNIX, SOCK_STREAM, 0);
+  BOOL ok = NO;
+
+  if (s < 0)
+    return NO;
+  memset(&sun, 0, sizeof(sun));
+  sun.sun_family = AF_UNIX;
+  strlcpy(sun.sun_path, "/var/run/loginwindow/control", sizeof(sun.sun_path));
+  snprintf(line, sizeof(line), "%s\n", what);
+  if (connect(s, (struct sockaddr *)&sun, sizeof(sun)) == 0
+      && write(s, line, strlen(line)) > 0
+      && read(s, answer, sizeof(answer) - 1) > 0)
+    ok = strncmp(answer, "ok", 2) == 0;
+  close(s);
+  return ok;
+}
+
+- (void) ask: (const char *)what title: (NSString *)title
+      button: (NSString *)button
+{
+  if (NSRunAlertPanel(title, @"Your apps will quit, and any unsaved changes "
+                      @"will be lost.", button, @"Cancel", nil)
+      != NSAlertDefaultReturn)
+    return;
+  if (!NBAskLoginWindow(what))
+    NSRunAlertPanel(title, @"The login window didn’t answer, so nothing was "
+                    @"done.", @"OK", nil, nil);
+}
+
+- (void) logOut: (id)sender
+{
+  [self ask: "logout"
+      title: [NSString stringWithFormat: @"Log out %@?",
+                       [NSFullUserName() length] ? NSFullUserName()
+                                                 : NSUserName()]
+     button: @"Log Out"];
+}
+
+- (void) restart: (id)sender
+{
+  [self ask: "restart" title: @"Restart now?" button: @"Restart"];
+}
+
+- (void) shutDown: (id)sender
+{
+  [self ask: "shutdown" title: @"Shut down now?" button: @"Shut Down"];
+}
+
+@end
+
 @implementation NextBSD
 
 static NSDictionary *lightInfo = nil;
+
+/* The Mac style's bar starts with the NextBSD menu; the other styles
+   have none (Windows has the Start menu, NeXT Workspace's menu). */
+- (void) organizeMenu: (NSMenu *)menu isHorizontal: (BOOL)horizontal
+{
+  BOOL main = menu == [NSApp mainMenu];
+  NSInteger i;
+
+  if (main)
+    while ((i = [menu indexOfItemWithRepresentedObject: NBSystemMenuTag]) >= 0)
+      [menu removeItemAtIndex: i];
+  [super organizeMenu: menu isHorizontal: horizontal];
+  if (main && horizontal
+      && NSInterfaceStyleForKey(@"NSMenuInterfaceStyle", nil)
+         == NSMacintoshInterfaceStyle)
+    [menu insertItem: [NBSystemMenu item] atIndex: 0];
+  /* NeXT: Workspace's menu ends with them, where other apps have Quit. */
+  else if (main && !horizontal
+           && [[[NSProcessInfo processInfo] processName]
+                isEqual: @"Workspace"])
+    {
+      NSEnumerator *e = [[NBSystemMenu sessionItems] objectEnumerator];
+      NSMenuItem *it;
+
+      while ((it = [e nextObject]) != nil)
+        [menu addItem: it];
+    }
+}
 
 /* No app icon at the start of the menus (the app's own item is its name
    alone); NBMenuShowsAppIcon brings it back. */
