@@ -352,6 +352,20 @@ NBButtonFrame(NSWindowButton which, NSRect b)
   return NSMakeRect(6, top, NBButtonSize, NBButtonSize);
 }
 
+/* The state of the title bar drawn last (GSTheme's inputState: 0 key, 1
+   neither, 2 main). A title button drawn with no window, as a window
+   manager that draws with this theme does (XLibre draws the title bar,
+   then its buttons), takes its active look from that. */
+static int nbTitleState = 1;
+
+static BOOL
+NBTitleActive(NSWindow *w)
+{
+  if (w == nil)
+    return nbTitleState != 1;
+  return [w isKeyWindow] || [w isMainWindow];
+}
+
 /* How far the title keeps from each side, so it stays centred clear of
    the buttons. */
 static CGFloat
@@ -516,7 +530,7 @@ static char NBTrackKey;
 - (void) nbDrawMac
 {
   NSWindow *w = [self window];
-  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  BOOL active = NBTitleActive(w);
   NSInteger kind = [self tag];
   unsigned fill = kind == NSWindowCloseButton ? 0xff5f57
                 : kind == NSWindowMiniaturizeButton ? 0xfebc2e : 0x28c840;
@@ -570,7 +584,7 @@ static char NBTrackKey;
 - (void) nbDrawTiling
 {
   NSWindow *w = [self window];
-  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  BOOL active = NBTitleActive(w);
   NSInteger kind = [self tag];
   BOOL pressed = [[self cell] isHighlighted], hover = [self nbHover];
   NSRect b = [self bounds];
@@ -629,7 +643,7 @@ static char NBTrackKey;
 - (void) nbDrawNeXT
 {
   NSWindow *w = [self window];
-  BOOL active = [w isKeyWindow] || [w isMainWindow];
+  BOOL active = NBTitleActive(w);
   BOOL pressed = [[self cell] isHighlighted], hover = [self nbHover];
   BOOL close = [self tag] == NSWindowCloseButton;
   BOOL lit = active || hover;
@@ -1602,6 +1616,16 @@ NBRingForControl(NSView *view)
   return NBButtonFrame(NSWindowMiniaturizeButton, bounds);
 }
 
+/* Where zoom goes: the Mac and Tiling styles have one, NeXT none (an
+   empty rect). GSTheme doesn't ask; window managers that draw with this
+   theme do (XLibre), so their frames get the same buttons as ours. */
+- (NSRect) zoomButtonFrameForBounds: (NSRect)bounds
+{
+  if ([nbWindowStyle isEqual: @"nextstep"])
+    return NSZeroRect;
+  return NBButtonFrame(NSWindowZoomButton, bounds);
+}
+
 - (float) titlebarButtonSize
 {
   return 16.0;
@@ -1629,6 +1653,8 @@ NBRingForControl(NSView *view)
 {
   BOOL key = (inputState == 0);
   NSRect work = titleBarRect;
+
+  nbTitleState = inputState;
 
   [NBHex(key ? NBTitle : NBTitleInactive) set];
   NSRectFill(titleBarRect);
