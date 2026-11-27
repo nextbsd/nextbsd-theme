@@ -110,6 +110,29 @@ Workspace Preferences switches the window mode: it sets WindowServer's
 notification for the mode, the Dock position and the menu style, so the
 Dock moves and running apps change their menus at once.
 
+## The Help menu
+
+Every app's Help menu starts with what macOS has there
+(`NBHelpMenu.m`):
+
+- **Search** (Command-?), drawn as a search field. Choosing it opens the
+  search in the Help menu's place: typing lists help topics from every
+  help book and the app's own menu commands. Choosing a topic shows it
+  in Help; choosing a command opens the menus down to it, highlighted,
+  until the next click or key (a click on it, or Return, chooses it).
+  **Show all results** searches in Help.
+- ***App* Help**, when the app has a book: a `.help` bundle in its
+  Resources, named after its executable or by `GSHelpContentsFile`.
+- **NextBSD Help** and **Keyboard Shortcuts**, from NextBSD Help.
+
+Then the app's own items, without those that would open the same book
+(`-showHelp:` items, and one called "*App* Help" when the app has a
+book). An app with no Help menu gets one. Help.app
+(nextbsd/apps-help) shows the books: a running Help through
+Distributed Objects (`org.nextbsd.Help`), otherwise started with
+`-NBHelpBook`, `-NBHelpTopic` and `-NBHelpSearch`. Its README describes
+the book format.
+
 ## Miniwindow icons
 
 With NeXT miniwindows (`NBMinimizeStyle = nextstep`), GNUstep draws the

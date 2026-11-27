@@ -2,6 +2,7 @@
 #import <AppKit/PSOperators.h>
 #import <GNUstepGUI/GSTheme.h>
 #import <objc/runtime.h>
+#import "NBHelpMenu.h"
 #include <math.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -1052,6 +1053,10 @@ static NSDictionary *lightInfo = nil;
       while ((it = [e nextObject]) != nil)
         [menu addItem: it];
     }
+  /* The Help menu starts with the help search and the help books
+     (NBHelpMenu.m). */
+  if (main)
+    [NBHelpMenu organizeMainMenu: menu horizontal: horizontal];
 }
 
 /* No app icon at the start of the menus (the app's own item is its name
@@ -2000,6 +2005,13 @@ NBRingForControl(NSView *view)
                                           state: (GSThemeControlState)state
                                    isHorizontal: (BOOL)isHorizontal
 {
+  /* The Help menu's search item looks like a search field. */
+  if ([NBHelpMenu drawItemCell: cell withFrame: cellFrame
+                   highlighted: (state == GSThemeHighlightedState
+                                 || state == GSThemeSelectedState)
+                         field: NBHex(NBField)
+                        border: NBHex(NBFieldBorder)])
+    return;
   if (state != GSThemeHighlightedState && state != GSThemeSelectedState
       && [self tilesNamed: (isHorizontal ? GSMenuHorizontalItem : GSMenuVerticalItem)
                     state: state] == nil)
