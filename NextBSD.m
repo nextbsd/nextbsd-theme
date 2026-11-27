@@ -812,6 +812,43 @@ NBRetile(NSView *view)
        selector: @selector(desktopSettingsChanged:)
            name: @"org.nextbsd.DesktopSettingsChanged"
          object: nil];
+  /* A menu bar in a window takes the title bar's colour, which changes
+     with the key window: draw it again then. */
+  [[NSNotificationCenter defaultCenter]
+    addObserver: self
+       selector: @selector(keyChanged:)
+           name: NSWindowDidBecomeKeyNotification
+         object: nil];
+  [[NSNotificationCenter defaultCenter]
+    addObserver: self
+       selector: @selector(keyChanged:)
+           name: NSWindowDidResignKeyNotification
+         object: nil];
+}
+
+static void
+NBRedrawMenuViews(NSView *view)
+{
+  NSEnumerator *e;
+  NSView *sub;
+
+  if ([view isKindOfClass: [NSMenuView class]])
+    {
+      [view setNeedsDisplay: YES];
+      return;
+    }
+  e = [[view subviews] objectEnumerator];
+  while ((sub = [e nextObject]) != nil)
+    NBRedrawMenuViews(sub);
+}
+
++ (void) keyChanged: (NSNotification *)note
+{
+  NSWindow *w = [note object];
+  NSView *frame = [[w contentView] superview];
+
+  if (frame != nil)
+    NBRedrawMenuViews(frame);
 }
 
 + (void) desktopSettingsChanged: (NSNotification *)note
@@ -1019,7 +1056,7 @@ static NSDictionary *lightInfo = nil;
      bar runs the whole width under it (or WindowServer's, when the app
      has none), and a second layer of the same colour made the items a
      lighter block. A menu bar in a window (inwindow) stays solid, with
-     its line. */
+     its line, in the title bar's colour. */
   if ([[menuView window] level] > NSMainMenuWindowLevel)
     {
       [[menuView window] setOpaque: NO];
@@ -1035,7 +1072,9 @@ static NSDictionary *lightInfo = nil;
       NSRectFill(NSIntersectionRect(bounds, dirtyRect));
       return;
     }
-  [[self menuBackgroundColor] set];
+  /* The title bar's colour (key or not), so the bar and the menu under
+     it are one band, not a white strip. */
+  [NBHex([[menuView window] isKeyWindow] ? NBTitle : NBTitleInactive) set];
   NSRectFill(NSIntersectionRect(bounds, dirtyRect));
   [[self menuBorderColor] set];
   NSRectFill(NSMakeRect(NSMinX(bounds), NSMinY(bounds),
